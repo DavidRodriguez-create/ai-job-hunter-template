@@ -45,7 +45,8 @@ table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--panel); }
 td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tablewrap { max-height: 640px; overflow: auto; }
+.tablewrap { overflow-x: auto; }
+.pager { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
 .sortbar { margin-top: -4px; }
 button.dir { min-width: 30px; padding: 5px 6px; }
@@ -66,7 +67,7 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
 .chip { border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; font-size: 13px; background: var(--bg); }
 .chip b { font-variant-numeric: tabular-nums; }
 .chip.good { border-color: var(--good); color: var(--good); } .chip.warn { border-color: var(--warn); color: var(--warn); }
-.tlist { display: grid; gap: 8px; }
+.tlist { display: grid; gap: 8px; overflow-y: auto; overscroll-behavior: contain; }  /* height set in JS: 3½ rows */
 .trow { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 10px 12px; border: 1px solid var(--line);
   border-radius: 8px; background: var(--bg); }
 .trow .t { font-weight: 600; } .trow .meta { color: var(--muted); font-size: 12.5px; }
@@ -103,6 +104,10 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
     <div class="filters" style="margin-bottom:10px">
       <button id="approve-ready">Approve all ready</button>
       <span class="sub">Approved jobs go first in the next application batch.</span>
+    </div>
+    <div class="filters" style="margin-bottom:10px">
+      <button id="start-search" hidden>Start search now</button>
+      <span class="sub" id="search-msg"></span>
     </div>
     <div class="tlist" id="today-list"></div>
     <div class="hint" id="today-hint"></div>
@@ -164,6 +169,14 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
         <th class="hide-sm" data-sort="posted">Posted</th><th data-sort="status">Status</th></tr></thead>
       <tbody id="rows"></tbody>
     </table></div>
+    <div class="pager">
+      <button id="pg-prev">‹ Previous</button>
+      <span class="sub" id="pg-info"></span>
+      <button id="pg-next">Next ›</button>
+      <select id="pg-per" aria-label="Jobs per page">
+        <option value="25">25 per page</option><option value="50">50 per page</option><option value="100">100 per page</option>
+      </select>
+    </div>
   </section>
 </main>
 
@@ -319,15 +332,23 @@ function applySort() {
   loadJobs();
 }
 
-async function loadJobs() {
+let PAGE = 1, PAGES = 1;
+// page: which page to show. Filter and sort changes call loadJobs() with no page, so they start again at page 1.
+async function loadJobs(page = 1) {
   const p = new URLSearchParams();
   for (const [k, id] of [["q", "f-q"], ["status", "f-status"], ["country", "f-country"], ["company", "f-company"]])
     if ($(id).value) p.set(k, $(id).value);
   p.set("sort", sortState.filter(([k]) => k).map(([k, d]) => `${k}:${d}`).join(","));
   if ($("f-remote").checked) p.set("remote", "1");
   if ($("f-salary").checked) p.set("salary", "1");
-  const jobs = await (await fetch("/api/jobs?" + p)).json();
-  $("count").textContent = jobs.length >= 300 ? "showing first 300" : `${jobs.length} jobs`;
+  p.set("page", page); p.set("per", $("pg-per").value);
+  const res = await (await fetch("/api/jobs?" + p)).json();
+  const jobs = res.jobs;
+  PAGE = res.page; PAGES = Math.max(1, Math.ceil(res.total / res.per));
+  const first = res.total ? (PAGE - 1) * res.per + 1 : 0;
+  $("count").textContent = `${fmt(res.total)} jobs`;
+  $("pg-info").textContent = `Page ${PAGE} of ${PAGES} · ${fmt(first)}–${fmt(first ? first + jobs.length - 1 : 0)} of ${fmt(res.total)}`;
+  $("pg-prev").disabled = PAGE <= 1; $("pg-next").disabled = PAGE >= PAGES;
   const tb = $("rows"); tb.replaceChildren();
   if (!jobs.length) { tb.append(el("tr", {}, el("td", { colspan: 8, class: "empty", text: "No jobs match" }))); return; }
   for (const j of jobs) {
@@ -350,8 +371,11 @@ async function loadJobs() {
 }
 
 let t;
-$("f-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(loadJobs, 250); });
-for (const id of ["f-status", "f-country", "f-company", "f-remote", "f-salary"]) $(id).addEventListener("change", loadJobs);
+$("f-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => loadJobs(), 250); });
+for (const id of ["f-status", "f-country", "f-company", "f-remote", "f-salary", "pg-per"]) $(id).addEventListener("change", () => loadJobs());
+const goPage = async (n) => { await loadJobs(n); $("rows").closest("section").scrollIntoView({ behavior: "smooth" }); };
+$("pg-prev").addEventListener("click", () => goPage(PAGE - 1));
+$("pg-next").addEventListener("click", () => goPage(PAGE + 1));
 $("f-reset").addEventListener("click", () => {
   for (const id of ["f-q", "f-status", "f-country", "f-company"]) $(id).value = "";
   $("f-remote").checked = $("f-salary").checked = false;
@@ -367,10 +391,42 @@ async function postStatus(ids, status) {
   await refreshAll();
 }
 
+// ---- Start search button: shown only until the search has run today
+let searchTimer = null, searchWasRunning = false;
+function showSearch(s) {
+  const btn = $("start-search");
+  btn.hidden = s.ran_today && !s.running;
+  btn.disabled = s.running;
+  btn.textContent = s.running ? "Searching…" : "Start search now";
+  $("search-msg").textContent = s.running ? "Looking for new jobs. This takes a few minutes; the list refreshes when it finishes." :
+    s.ran_today ? `The search already ran today (${s.last.slice(11, 16)}).` : "";
+  clearTimeout(searchTimer);
+  if (s.running) searchTimer = setTimeout(refreshAll, 5000);
+  if (searchWasRunning && !s.running) searchTimer = setTimeout(refreshAll, 0);  // just finished: show the new jobs
+  searchWasRunning = s.running;
+}
+async function startSearch() {
+  const res = await fetch("/api/search/start", { method: "POST", headers: { "X-Token": TOKEN } });
+  if (!res.ok) alert((await res.json().catch(() => ({}))).error || "Couldn't start the search. Reload the page and try again.");
+  await loadToday();
+}
+$("start-search").addEventListener("click", startSearch);
+
+// Show 3½ rows of the Today list; the half-cut 4th row tells you there's more to scroll inside the list.
+function fitToday() {
+  const list = $("today-list"), rows = [...list.children];
+  if (rows.length <= 3) { list.style.maxHeight = ""; return; }
+  const gap = parseFloat(getComputedStyle(list).rowGap) || 0;
+  const h = rows.slice(0, 3).reduce((s, r) => s + r.offsetHeight + gap, 0) + rows[3].offsetHeight / 2;
+  list.style.maxHeight = `${Math.round(h)}px`;
+}
+window.addEventListener("resize", fitToday);
+
 let READY_IDS = [];
 async function loadToday() {
   const d = await (await fetch("/api/today")).json();
   const a = d.autopilot;
+  if (d.search) showSearch(d.search);
   $("autopilot").textContent = `Autopilot: new jobs weekdays 08:00 · applications ${a.apply_time} · ` +
     `batch = ${a.apply_include.join(" + ")} · max ${a.max_per_day}/day · worth-it filter ${a.worth_it_filter ? "ON" : "off"}`;
   const ready = d.waiting.filter((j) => !j.problems.length && j.in_batch && j.has_cv);
@@ -385,7 +441,8 @@ async function loadToday() {
     el("span", { class: "chip" + (needs.length ? " warn" : "") }, el("b", { text: needs.length }), " need you"),
     el("span", { class: "chip" }, el("b", { text: d.applied_today }), ` applied today (max ${a.max_per_day})`),
     ...(d.running_since ? [el("span", { class: "chip running", text: `Sending applications… (since ${d.running_since.slice(11, 16)})` })] : []));
-  const list = $("today-list"); list.replaceChildren();
+  const list = $("today-list"), keepScroll = list.scrollTop;  // approving/skipping re-renders: stay where you were
+  list.replaceChildren();
   if (!d.waiting.length) list.append(el("div", { class: "empty", text: "Nothing waiting. New matches arrive with the next morning run." }));
   for (const j of d.waiting) {
     const url = safeUrl(j.url);
@@ -411,13 +468,15 @@ async function loadToday() {
       ...(j.problems.length ? [el("div", { class: "problems", text: "Needs you: " + j.problems.join(" · ") +
         (j.problems.some((p) => p.startsWith("your ")) ? ". Tell Claude once and it's remembered for every job." : "") })] : [])));
   }
+  fitToday();
+  list.scrollTop = keepScroll;
   $("today-hint").textContent =
     `At ${a.apply_time} on weekdays you get a notification with today's batch (${a.apply_include.join(" + ")}). ` +
     `Open it and reply "send all" (or "send all except …"). Nothing is sent before your reply. ` +
     `To send right now, press Run now on "Daily applications" under Scheduled in the Claude app, or tell Claude "send my applications".`;
 }
 
-async function refreshAll() { await Promise.all([loadStats(), loadToday()]); loadJobs(); }
+async function refreshAll() { await Promise.all([loadStats(), loadToday()]); loadJobs(PAGE); }  // stay on the same page
 $("approve-ready").addEventListener("click", () => READY_IDS.length && postStatus(READY_IDS, "approved"));
 
 loadStats().then(applySort).then(loadToday).catch((e) => { $("lastrun").textContent = "Error: " + e; });

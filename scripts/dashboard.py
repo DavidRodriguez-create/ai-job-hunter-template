@@ -15,6 +15,7 @@ import argparse
 import json
 import re
 import secrets
+import subprocess
 import sys
 import tomllib
 import webbrowser
@@ -29,6 +30,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PAGE = Path(__file__).resolve().parent / "dashboard.html"
 PREFS = tomllib.loads((ROOT / "profile" / "preferences.toml").read_text(encoding="utf-8"))
 TOKEN = secrets.token_urlsafe(24)
+SEARCH_PROC: subprocess.Popen | None = None  # the search started from the 'Start search' button, if any
+SEARCH_LOG = ROOT / "data" / "search.log"
 FUNNEL = ["new", "scored", "queued", "approved", "applied", "interview", "offer"]
 CLOSED = ["rejected", "skipped", "closed"]
 
@@ -131,7 +134,11 @@ def order_by(sort: str | None) -> str:
     return ", ".join(f"{SORT_COLS[c]} {d} NULLS LAST" for c, d in parts) + ", id DESC"
 
 
-def jobs(conn, q: dict) -> list[dict]:
+PAGE_SIZES = (25, 50, 100)
+
+
+def jobs(conn, q: dict) -> dict:
+    """One page of the jobs table: {"jobs": [...], "total": n, "page": p, "per": size}."""
     where, args = [], []
     for key, col in (("country", "COALESCE(country,'Unknown')"), ("company", "company")):
         if q.get(key):
@@ -151,10 +158,42 @@ def jobs(conn, q: dict) -> list[dict]:
         where.append("remote = 1")
     if q.get("salary") == "1":
         where.append("salary_min IS NOT NULL")
+    cond = f"WHERE {' AND '.join(where)}" if where else ""
+    total = conn.execute(f"SELECT COUNT(*) FROM jobs {cond}", args).fetchone()[0]
+    per = int(q["per"]) if q.get("per", "").isdigit() and int(q["per"]) in PAGE_SIZES else PAGE_SIZES[0]
+    pages = max(1, -(-total // per))
+    page = min(max(1, int(q["page"]) if q.get("page", "").isdigit() else 1), pages)
     sql = (f"SELECT id, company, title, country, location, remote, url, status, score, "
            f"salary_min, salary_max, currency, posted_at, viability_eur_month, cv_path FROM jobs "
-           f"{'WHERE ' + ' AND '.join(where) if where else ''} ORDER BY {order_by(q.get('sort'))} LIMIT 300")
-    return rows(conn, sql, args)
+           f"{cond} ORDER BY {order_by(q.get('sort'))} LIMIT ? OFFSET ?")
+    return {"jobs": rows(conn, sql, [*args, per, (page - 1) * per]), "total": total, "page": page, "per": per}
+
+
+def search_status(conn) -> dict:
+    """Has the job search (fetch) run today, and is one running right now from the button?"""
+    last = conn.execute("""SELECT MAX(datetime(finished_at, 'localtime')) FROM runs
+                           WHERE date(finished_at, 'localtime') = date('now', 'localtime')""").fetchone()[0]
+    return {"ran_today": bool(last), "last": last, "running": search_running()}
+
+
+def search_running() -> bool:
+    return SEARCH_PROC is not None and SEARCH_PROC.poll() is None
+
+
+def start_search(conn) -> tuple[int, dict]:
+    """Start the mechanical daily run (fetch -> score -> queue -> check forms) in the background.
+    Refused when one is already running or the search already ran today."""
+    global SEARCH_PROC
+    status = search_status(conn)
+    if status["running"]:
+        return 409, {"error": "The search is already running.", **status}
+    if status["ran_today"]:
+        return 409, {"error": "The search already ran today.", **status}
+    SEARCH_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with SEARCH_LOG.open("w", encoding="utf-8") as log:
+        SEARCH_PROC = subprocess.Popen([sys.executable, str(ROOT / "scripts" / "daily.py")], cwd=ROOT,
+                                       stdout=log, stderr=subprocess.STDOUT)
+    return 200, {"ok": True, **search_status(conn)}
 
 
 def today(conn) -> dict:
@@ -181,6 +220,7 @@ def today(conn) -> dict:
                       "apply_include": apply_batch.INCLUDE, "max_per_day": apply_batch.MAX_PER_DAY,
                       "apply_time": auto.get("apply_time", "13:00")},
         "running_since": held["started"] if held else None,
+        "search": search_status(conn),
         "applied_today": apply_batch.applied_today(conn),
         "waiting": waiting,
         "recent_applied": rows(conn, """SELECT id, company, title, country, applied_at FROM jobs
@@ -255,6 +295,11 @@ class Handler(BaseHTTPRequestHandler):
         if not self._host_ok() or not secrets.compare_digest(self.headers.get("X-Token", ""), TOKEN):
             return self._send(403, b"forbidden", "text/plain")
         path = urlparse(self.path).path
+        if path == "/api/search/start":
+            with db.connect() as conn:
+                db.init(conn)
+                code, body = start_search(conn)
+            return self._json(body, code)
         m = re.fullmatch(r"/api/jobs/(\d+)/status", path)
         if not m and path != "/api/jobs/bulk-status":
             return self._send(404, b"not found", "text/plain")
