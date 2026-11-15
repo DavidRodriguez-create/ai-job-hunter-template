@@ -1,0 +1,54 @@
+# What jobs to look for and how to score them. Edit freely — see docs/your-profile.md.
+# The example below is for a backend/data engineer; change it to your field.
+
+[search]
+language = "en"                       # language for CVs and cover letters
+languages_spoken = ["English"]        # jobs requiring other languages get a lower score, e.g. ["English", "Spanish"]
+roles = ["Backend Engineer", "Software Engineer", "Data Engineer", "Platform Engineer"]
+seniority = ["Mid", "Senior"]
+exclude_title_words = ["Staff", "Principal", "Director", "Manager", "Intern", "Junior", "Graduate"]
+# A job is kept only if its title contains one of these...
+title_include_any = [
+  "software", "backend", "back-end", "back end", "data", "platform", "infrastructure", "distributed",
+  "streaming", "cloud", "devops", "site reliability", "SRE", "full stack", "full-stack", "fullstack",
+  "machine learning", "ML", "AI", "developer", "Member of Technical Staff",
+]
+# ...and none of these (case-insensitive, whole words/phrases)
+title_exclude_any = [
+  "iOS", "Android", "Mobile", "Frontend", "Front End", "Front-End", "Hardware", "Firmware",
+  "Embedded", "Mechanical", "Electrical", "Sales", "Solutions Engineer", "Solutions Architect",
+  "Support", "Customer", "Field", "QA", "Test", "Design", "Designer", "Network", "Head of",
+  "Lead", "Partner", "Recruit", "Lawyer", "Counsel", "Analyst", "Internship", "Manufacturing",
+  "Maintenance", "Robotics", "Battery", "Process Engineer", "Quality", "Research Scientist",
+  "Scientist", "Solution Engineer", "IT Systems", "Data Center", "Datacenter", "Facilities",
+  "New Grad", "Early Career", "Associate", "Value Engineer", "Web Developer",
+]
+
+[stack]
+# Skills you HAVE: big score boost when a job mentions them
+core = ["Python", "Java", "SQL", "Kafka", "Spark", "AWS", "Kubernetes", "Terraform"]
+# Skills you'd LIKE to learn: small boost, never a reason to reject
+stretch = ["Go", "Rust", "Kotlin", "Flink", "GCP", "Azure", "LLM", "Distributed systems"]
+
+[company]
+prefer = "large international"
+min_employees = 1000
+blocklist = []                        # companies you never want to see
+
+[locations]
+# Countries you want, by priority. Use the names exactly as written in docs/find-jobs.md.
+tier1 = ["Netherlands", "Germany", "Ireland"]
+tier2 = ["United Kingdom", "Denmark", "Sweden"]
+remote = "accept"                     # accept | prefer | reject
+also_current = []                     # your current country, only if a job clearly beats your current one
+
+[visa]
+# Countries where you can ALREADY work without a visa (your citizenship / residence permits).
+# Example for an EU citizen: all EU/EEA countries + Switzerland, plus "Remote-Europe".
+work_without_visa = ["Netherlands", "Germany", "Ireland", "Denmark", "Sweden", "France", "Spain",
+                     "Luxembourg", "Norway", "Switzerland", "Remote-Europe"]
+# Countries you're interested in where you'd NEED a sponsored visa (scored lower if a job says it won't sponsor)
+needs_sponsorship = ["United States", "Canada", "Japan", "United Kingdom"]
+
+[viability]
+enabled_by_default = false            # the "is it worth it?" check only runs when you ask for it

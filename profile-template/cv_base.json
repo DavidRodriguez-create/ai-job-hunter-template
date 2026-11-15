@@ -1,0 +1,64 @@
+{
+  "_note": "Your default CV as structured data (example person: Alex Example). Tailoring copies this and adapts it per job. Every fact must also be in resume_master.md.",
+  "name": "Alex Example",
+  "headline": "Backend Engineer",
+  "contact": {
+    "location": "Lisbon, Portugal · Open to relocation",
+    "email": "alex@example.com",
+    "phone": "+351 900 000 000",
+    "links": [
+      ["LinkedIn", "https://www.linkedin.com/in/your-profile/"],
+      ["GitHub", "https://github.com/your-username"]
+    ]
+  },
+  "summary": "Backend engineer with 5 years building APIs and data pipelines for an e-commerce platform. Built an order-processing service handling ~2,000 orders per minute and cut cloud costs by 30%.",
+  "skills": [
+    ["Languages", "Python, Java, SQL"],
+    ["Backend", "REST, microservices, FastAPI, Spring Boot"],
+    ["Data", "PostgreSQL, Kafka, Spark"],
+    ["Cloud & DevOps", "AWS, Docker, Kubernetes, Terraform, CI/CD"]
+  ],
+  "experience": [
+    {
+      "company": "Acme Corp",
+      "role": "Senior Software Engineer",
+      "dates": "Jan 2023 – Present",
+      "location": "Lisbon, Portugal",
+      "projects": [
+        {
+          "name": "",
+          "dates": "",
+          "bullets": [
+            "Built the order-processing service in Java handling ~2,000 orders per minute at peak.",
+            "Cut cloud costs by 30% by moving batch jobs to spot instances.",
+            "Mentored 3 junior engineers."
+          ]
+        }
+      ]
+    },
+    {
+      "company": "Example Ltd",
+      "role": "Software Engineer",
+      "dates": "Sep 2020 – Dec 2022",
+      "location": "Porto, Portugal",
+      "projects": [
+        {
+          "name": "",
+          "dates": "",
+          "bullets": [
+            "Developed REST APIs in Python (FastAPI) used by 40 internal teams.",
+            "Reduced average API latency from 400 ms to 120 ms with caching."
+          ]
+        }
+      ]
+    }
+  ],
+  "education": [
+    ["BSc Computer Science", "University of Example", "2016 – 2020"]
+  ],
+  "languages": "English (C1) · Portuguese (native)",
+  "extra": [
+    "AWS Certified Developer – Associate (2024)"
+  ],
+  "cover_letter": null
+}

@@ -1,0 +1,405 @@
+# Companies to watch. Each needs the ATS ("greenhouse" | "lever" | "ashby" | "smartrecruiters")
+# and the board slug (the part after the domain in their careers URL).
+# Check new entries with:  python scripts/fetch_jobs.py --probe --only <name>
+# Set enabled = false to pause one.
+
+# --- Data / streaming / infra (closest to your stack)
+[[company]]
+name = "Databricks"
+ats = "greenhouse"
+slug = "databricks"
+
+[[company]]
+name = "Confluent"
+ats = "ashby"
+slug = "confluent"
+enabled = false  # board empty on Ashby - check confluent.io/careers manually
+
+[[company]]
+name = "Datadog"
+ats = "greenhouse"
+slug = "datadog"
+
+[[company]]
+name = "MongoDB"
+ats = "greenhouse"
+slug = "mongodb"
+
+[[company]]
+name = "Elastic"
+ats = "greenhouse"
+slug = "elastic"
+
+[[company]]
+name = "Cloudflare"
+ats = "greenhouse"
+slug = "cloudflare"
+
+[[company]]
+name = "Grafana Labs"
+ats = "greenhouse"
+slug = "grafanalabs"
+
+[[company]]
+name = "Snowflake"
+ats = "ashby"
+slug = "snowflake"
+
+[[company]]
+name = "GitLab"
+ats = "greenhouse"
+slug = "gitlab"
+
+[[company]]
+name = "Canonical"
+ats = "greenhouse"
+slug = "canonical"
+
+[[company]]
+name = "Celonis"
+ats = "greenhouse"
+slug = "celonis"
+
+# --- Payments / fintech (your domain)
+[[company]]
+name = "Stripe"
+ats = "greenhouse"
+slug = "stripe"
+
+[[company]]
+name = "Adyen"
+ats = "greenhouse"
+slug = "adyen"
+
+[[company]]
+name = "Coinbase"
+ats = "greenhouse"
+slug = "coinbase"
+
+[[company]]
+name = "Robinhood"
+ats = "greenhouse"
+slug = "robinhood"
+
+[[company]]
+name = "Affirm"
+ats = "greenhouse"
+slug = "affirm"
+
+[[company]]
+name = "Plaid"
+ats = "ashby"
+slug = "plaid"
+
+[[company]]
+name = "Ramp"
+ats = "ashby"
+slug = "ramp"
+
+[[company]]
+name = "Wealthsimple"
+ats = "ashby"
+slug = "wealthsimple"
+
+[[company]]
+name = "Kraken"
+ats = "ashby"
+slug = "kraken.com"
+
+[[company]]
+name = "N26"
+ats = "greenhouse"
+slug = "n26"
+
+[[company]]
+name = "Monzo"
+ats = "greenhouse"
+slug = "monzo"
+
+[[company]]
+name = "Visa"
+ats = "smartrecruiters"
+slug = "Visa"
+enabled = false  # moved off SmartRecruiters (Workday) - no public API
+
+# --- Big consumer / platform tech
+[[company]]
+name = "Spotify"
+ats = "lever"
+slug = "spotify"
+
+[[company]]
+name = "Airbnb"
+ats = "greenhouse"
+slug = "airbnb"
+
+[[company]]
+name = "Pinterest"
+ats = "greenhouse"
+slug = "pinterest"
+
+[[company]]
+name = "Dropbox"
+ats = "greenhouse"
+slug = "dropbox"
+
+[[company]]
+name = "Reddit"
+ats = "greenhouse"
+slug = "reddit"
+
+[[company]]
+name = "Discord"
+ats = "greenhouse"
+slug = "discord"
+
+[[company]]
+name = "Lyft"
+ats = "greenhouse"
+slug = "lyft"
+
+[[company]]
+name = "Instacart"
+ats = "greenhouse"
+slug = "instacart"
+
+[[company]]
+name = "Figma"
+ats = "greenhouse"
+slug = "figma"
+
+[[company]]
+name = "Twilio"
+ats = "greenhouse"
+slug = "twilio"
+
+[[company]]
+name = "Okta"
+ats = "greenhouse"
+slug = "okta"
+
+[[company]]
+name = "Samsara"
+ats = "greenhouse"
+slug = "samsara"
+
+[[company]]
+name = "Duolingo"
+ats = "greenhouse"
+slug = "duolingo"
+
+[[company]]
+name = "Roblox"
+ats = "greenhouse"
+slug = "roblox"
+
+[[company]]
+name = "Palantir"
+ats = "lever"
+slug = "palantir"
+
+[[company]]
+name = "Netflix"
+ats = "lever"
+slug = "netflix"
+enabled = false  # own portal - no public API
+
+[[company]]
+name = "GetYourGuide"
+ats = "ashby"
+slug = "getyourguide"
+
+[[company]]
+name = "Booking Holdings"
+ats = "smartrecruiters"
+slug = "BookingHoldings"
+enabled = false  # own portal - no public API
+
+# --- AI
+[[company]]
+name = "OpenAI"
+ats = "ashby"
+slug = "openai"
+
+[[company]]
+name = "Anthropic"
+ats = "greenhouse"
+slug = "anthropic"
+
+[[company]]
+name = "Cohere"
+ats = "ashby"
+slug = "cohere"
+
+[[company]]
+name = "Mistral AI"
+ats = "lever"
+slug = "mistral"
+enabled = false  # slug not found
+
+[[company]]
+name = "Notion"
+ats = "ashby"
+slug = "notion"
+
+# --- Country-specific picks
+[[company]]
+name = "Proton (CH)"
+ats = "greenhouse"
+slug = "proton"
+
+[[company]]
+name = "Scandit (CH)"
+ats = "greenhouse"
+slug = "scandit"
+
+[[company]]
+name = "Nexthink (CH)"
+ats = "smartrecruiters"
+slug = "nexthink"
+
+[[company]]
+name = "Cognite (NO)"
+ats = "greenhouse"
+slug = "cognite"
+
+[[company]]
+name = "Kahoot (NO)"
+ats = "greenhouse"
+slug = "kahoot"
+enabled = false  # slug not found
+
+[[company]]
+name = "Mercari (JP)"
+ats = "lever"
+slug = "mercari"
+enabled = false  # own portal - no public API
+
+[[company]]
+name = "SmartNews (JP)"
+ats = "greenhouse"
+slug = "smartnews"
+enabled = false  # slug not found
+
+[[company]]
+name = "Woven by Toyota (JP)"
+ats = "lever"
+slug = "woven-by-toyota"
+
+[[company]]
+name = "1Password (CA)"
+ats = "ashby"
+slug = "1password"
+
+[[company]]
+name = "Faire (CA)"
+ats = "greenhouse"
+slug = "faire"
+
+# --- More companies
+
+[[company]]
+name = "Wise"
+ats = "smartrecruiters"
+slug = "wise"
+
+[[company]]
+name = "Uber"
+ats = "smartrecruiters"
+slug = "uber"
+enabled = false  # only 1 posting on SmartRecruiters - uses own portal
+
+[[company]]
+name = "DoorDash"
+ats = "greenhouse"
+slug = "doordashusa"
+
+[[company]]
+name = "Nubank"
+ats = "ashby"
+slug = "nubank"
+
+[[company]]
+name = "Toast"
+ats = "greenhouse"
+slug = "toast"
+
+[[company]]
+name = "Brex"
+ats = "greenhouse"
+slug = "brex"
+
+[[company]]
+name = "SumUp"
+ats = "greenhouse"
+slug = "sumup"
+
+[[company]]
+name = "Miro"
+ats = "ashby"
+slug = "miro"
+
+[[company]]
+name = "HelloFresh"
+ats = "greenhouse"
+slug = "hellofresh"
+
+[[company]]
+name = "trivago"
+ats = "greenhouse"
+slug = "trivago"
+
+[[company]]
+name = "Delivery Hero"
+ats = "smartrecruiters"
+slug = "DeliveryHero"
+
+[[company]]
+name = "Bosch"
+ats = "smartrecruiters"
+slug = "BoschGroup"
+
+[[company]]
+name = "ServiceNow"
+ats = "smartrecruiters"
+slug = "ServiceNow"
+
+[[company]]
+name = "Vercel"
+ats = "greenhouse"
+slug = "vercel"
+
+[[company]]
+name = "ClickHouse"
+ats = "ashby"
+slug = "clickhouse"
+
+[[company]]
+name = "Temporal"
+ats = "ashby"
+slug = "temporal"
+
+[[company]]
+name = "Starburst"
+ats = "greenhouse"
+slug = "starburst"
+
+[[company]]
+name = "Fivetran"
+ats = "greenhouse"
+slug = "fivetran"
+
+[[company]]
+name = "Cockroach Labs"
+ats = "greenhouse"
+slug = "cockroachlabs"
+
+[[company]]
+name = "Supabase"
+ats = "ashby"
+slug = "supabase"
+
+[[company]]
+name = "Linear"
+ats = "ashby"
+slug = "linear"

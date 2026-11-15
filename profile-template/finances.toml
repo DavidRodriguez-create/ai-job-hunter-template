@@ -1,0 +1,261 @@
+# "Is it worth it?" model (optional feature — see docs/worth-it.md).
+#   monthly savings = net salary (after tax & social) − city cost of living − your fixed costs
+# Every number is a ROUGH ESTIMATE (2025/2026, single person, no kids). Edit anything that looks off;
+# for a real offer, check the tax with an official calculator (links at the bottom).
+# City amounts are in that city's own currency. Results are shown in your home_currency.
+
+[me]
+home_currency = "EUR"         # currency you think in / your fixed costs are in (EUR, USD, GBP, CHF…)
+min_gain_per_month = 300      # optional filter: a job must beat your current savings by at least this
+
+[me.fixed_monthly]            # costs that follow you wherever you live, per month, in home_currency
+# examples — replace with yours, or delete the lines you don't have:
+loan_or_mortgage = 0
+insurance = 0
+subscriptions = 0
+
+# Your current job, used as the comparison point. city must be one of the [city.X] blocks below
+# (add yours if it's missing). gross = yearly gross salary in that city's currency.
+# extras_net_year = yearly perks paid on top (meal vouchers, bonus, transport allowance…), net.
+[baseline]
+city = "Paris"
+gross = 50000
+extras_net_year = 0
+
+# ---------------------------------------------------------------- taxes
+# [gross, share of gross lost to income tax + employee social contributions]; interpolated linearly.
+[tax]
+France        = [[40000, 0.29], [55000, 0.31], [70000, 0.335], [90000, 0.365], [120000, 0.40]]
+Spain         = [[35000, 0.23], [45000, 0.265], [55000, 0.29], [70000, 0.32], [90000, 0.35]]
+Switzerland   = [[80000, 0.19], [100000, 0.21], [120000, 0.23], [150000, 0.25], [200000, 0.28]]   # Zurich canton; Geneva ~3 pts higher
+Norway        = [[500000, 0.25], [700000, 0.285], [900000, 0.31], [1100000, 0.33], [1500000, 0.36]]
+US-CA         = [[100000, 0.27], [150000, 0.31], [200000, 0.33], [250000, 0.36], [300000, 0.38]]
+US-WA         = [[100000, 0.20], [150000, 0.24], [200000, 0.25], [250000, 0.28], [300000, 0.30]]   # no state income tax
+US-TX         = [[100000, 0.20], [150000, 0.24], [200000, 0.25], [250000, 0.28], [300000, 0.30]]   # no state income tax
+US-NY         = [[100000, 0.29], [150000, 0.33], [200000, 0.35], [250000, 0.38], [300000, 0.40]]   # NYC incl. city tax
+Canada-ON     = [[80000, 0.25], [100000, 0.27], [130000, 0.30], [160000, 0.325], [200000, 0.35]]
+Canada-BC     = [[80000, 0.24], [100000, 0.26], [130000, 0.29], [160000, 0.32], [200000, 0.345]]
+Japan         = [[6000000, 0.23], [8000000, 0.25], [10000000, 0.27], [12000000, 0.29], [15000000, 0.32]]
+Germany       = [[60000, 0.39], [70000, 0.40], [85000, 0.42], [100000, 0.435], [130000, 0.45]]     # class I, no church tax
+Netherlands   = [[60000, 0.29], [70000, 0.31], [90000, 0.345], [110000, 0.37]]                    # WITHOUT the expat 30% ruling
+Ireland       = [[60000, 0.27], [80000, 0.32], [100000, 0.36], [130000, 0.40]]
+UK            = [[60000, 0.25], [80000, 0.30], [100000, 0.34], [130000, 0.42]]                    # 100-125k GBP loses allowance
+Denmark       = [[500000, 0.35], [600000, 0.37], [750000, 0.39], [900000, 0.42]]
+Sweden        = [[500000, 0.30], [600000, 0.31], [720000, 0.33], [900000, 0.37]]
+Luxembourg    = [[60000, 0.25], [80000, 0.30], [100000, 0.34], [130000, 0.38]]
+
+# City to assume when a job names only the country (e.g. "Remote - US", "Germany").
+[country_default]
+"United States" = "Austin"
+Canada = "Toronto"
+Switzerland = "Zurich"
+Norway = "Oslo"
+Japan = "Tokyo"
+Germany = "Berlin"
+Netherlands = "Amsterdam"
+Ireland = "Dublin"
+"United Kingdom" = "London"
+Denmark = "Copenhagen"
+Sweden = "Stockholm"
+Luxembourg = "Luxembourg"
+France = "Paris"
+Spain = "Madrid"
+
+# ---------------------------------------------------------------- cities
+# cost = monthly: rent (1-bed), utilities, internet, groceries, transport, phone, lunch, entertainment,
+#        health insurance you pay yourself (CH/NL/US). salary = typical backend engineer base, gross/year.
+# match = words that identify the city in a job's location text.
+
+[city.Nice]
+country = "France"
+currency = "EUR"
+tax = "France"
+match = ["nice", "sophia antipolis", "antibes"]
+cost = { rent = 950, utilities = 120, internet = 30, groceries = 400, transport = 75, phone = 15, lunch = 150, entertainment = 250, health = 0 }
+salary = { mid = 45000, senior = 55000 }
+
+[city.Paris]
+country = "France"
+currency = "EUR"
+tax = "France"
+match = ["paris"]
+cost = { rent = 1400, utilities = 150, internet = 30, groceries = 400, transport = 90, phone = 15, lunch = 150, entertainment = 250, health = 0 }
+salary = { mid = 55000, senior = 65000 }
+
+[city.Madrid]
+country = "Spain"
+currency = "EUR"
+tax = "Spain"
+match = ["madrid"]
+cost = { rent = 1300, utilities = 90, internet = 30, groceries = 380, transport = 60, phone = 15, lunch = 150, entertainment = 250, health = 0 }
+salary = { mid = 45000, senior = 55000 }
+
+[city.Barcelona]
+country = "Spain"
+currency = "EUR"
+tax = "Spain"
+match = ["barcelona"]
+cost = { rent = 1300, utilities = 80, internet = 25, groceries = 450, transport = 60, phone = 10, lunch = 100, entertainment = 200, health = 0 }
+salary = { mid = 45000, senior = 55000 }
+
+[city.Zurich]
+country = "Switzerland"
+currency = "CHF"
+tax = "Switzerland"
+match = ["zurich", "zürich", "zug", "basel", "bern", "switzerland", "lausanne"]
+cost = { rent = 2200, utilities = 150, internet = 50, groceries = 600, transport = 90, phone = 30, lunch = 300, entertainment = 300, health = 400 }
+salary = { mid = 115000, senior = 140000 }
+
+[city.Geneva]
+country = "Switzerland"
+currency = "CHF"
+tax = "Switzerland"
+match = ["geneva", "genève"]
+cost = { rent = 2300, utilities = 150, internet = 50, groceries = 600, transport = 70, phone = 30, lunch = 300, entertainment = 300, health = 450 }
+salary = { mid = 110000, senior = 135000 }
+
+[city.Oslo]
+country = "Norway"
+currency = "NOK"
+tax = "Norway"
+match = ["oslo", "norway", "bergen", "trondheim"]
+cost = { rent = 15000, utilities = 1200, internet = 600, groceries = 5000, transport = 900, phone = 350, lunch = 2500, entertainment = 2500, health = 0 }
+salary = { mid = 750000, senior = 900000 }
+
+[city.SanFrancisco]
+country = "United States"
+currency = "USD"
+tax = "US-CA"
+match = ["san francisco", "bay area", "mountain view", "palo alto", "sunnyvale", "menlo park", "san jose", "san mateo", "california", ", ca"]
+cost = { rent = 3300, utilities = 150, internet = 70, groceries = 600, transport = 100, phone = 50, lunch = 300, entertainment = 400, health = 200 }
+salary = { mid = 170000, senior = 210000 }
+
+[city.Seattle]
+country = "United States"
+currency = "USD"
+tax = "US-WA"
+match = ["seattle", "bellevue", "redmond", "washington", ", wa"]
+cost = { rent = 2400, utilities = 150, internet = 70, groceries = 550, transport = 100, phone = 50, lunch = 300, entertainment = 350, health = 200 }
+salary = { mid = 160000, senior = 200000 }
+
+[city.NewYork]
+country = "United States"
+currency = "USD"
+tax = "US-NY"
+match = ["new york", "nyc", "brooklyn", ", ny"]
+cost = { rent = 4000, utilities = 150, internet = 70, groceries = 650, transport = 130, phone = 50, lunch = 350, entertainment = 450, health = 200 }
+salary = { mid = 165000, senior = 205000 }
+
+[city.Austin]
+country = "United States"
+currency = "USD"
+tax = "US-TX"
+match = ["austin", "dallas", "houston", "texas", ", tx"]
+cost = { rent = 1700, utilities = 180, internet = 70, groceries = 500, transport = 300, phone = 50, lunch = 250, entertainment = 300, health = 200 }
+salary = { mid = 140000, senior = 175000 }
+
+[city.Toronto]
+country = "Canada"
+currency = "CAD"
+tax = "Canada-ON"
+match = ["toronto", "waterloo", "ottawa", "ontario", "canada", ", on"]
+cost = { rent = 2600, utilities = 150, internet = 80, groceries = 500, transport = 160, phone = 60, lunch = 250, entertainment = 300, health = 0 }
+salary = { mid = 120000, senior = 150000 }
+
+[city.Vancouver]
+country = "Canada"
+currency = "CAD"
+tax = "Canada-BC"
+match = ["vancouver", "british columbia", ", bc"]
+cost = { rent = 2800, utilities = 120, internet = 80, groceries = 500, transport = 130, phone = 60, lunch = 250, entertainment = 300, health = 0 }
+salary = { mid = 125000, senior = 155000 }
+
+[city.Tokyo]
+country = "Japan"
+currency = "JPY"
+tax = "Japan"
+match = ["tokyo", "japan", "osaka", "yokohama"]
+cost = { rent = 180000, utilities = 12000, internet = 5000, groceries = 50000, transport = 10000, phone = 3000, lunch = 25000, entertainment = 40000, health = 0 }
+salary = { mid = 9000000, senior = 12000000 }
+
+[city.Munich]
+country = "Germany"
+currency = "EUR"
+tax = "Germany"
+match = ["munich", "münchen"]
+cost = { rent = 1500, utilities = 200, internet = 40, groceries = 400, transport = 60, phone = 15, lunch = 150, entertainment = 250, health = 0 }
+salary = { mid = 75000, senior = 90000 }
+
+[city.Berlin]
+country = "Germany"
+currency = "EUR"
+tax = "Germany"
+match = ["berlin", "germany", "hamburg", "frankfurt"]
+cost = { rent = 1300, utilities = 200, internet = 40, groceries = 380, transport = 60, phone = 15, lunch = 150, entertainment = 250, health = 0 }
+salary = { mid = 70000, senior = 85000 }
+
+[city.Amsterdam]
+country = "Netherlands"
+currency = "EUR"
+tax = "Netherlands"
+match = ["amsterdam", "netherlands", "rotterdam", "utrecht", "the hague", "eindhoven"]
+cost = { rent = 1900, utilities = 180, internet = 50, groceries = 400, transport = 100, phone = 15, lunch = 150, entertainment = 250, health = 150 }
+salary = { mid = 70000, senior = 85000 }
+
+[city.Dublin]
+country = "Ireland"
+currency = "EUR"
+tax = "Ireland"
+match = ["dublin", "ireland", "cork"]
+cost = { rent = 2200, utilities = 180, internet = 50, groceries = 400, transport = 100, phone = 20, lunch = 200, entertainment = 250, health = 0 }
+salary = { mid = 75000, senior = 95000 }
+
+[city.London]
+country = "United Kingdom"
+currency = "GBP"
+tax = "UK"
+match = ["london", "united kingdom", "uk", "england", "manchester", "cambridge", "edinburgh"]
+cost = { rent = 2200, utilities = 370, internet = 35, groceries = 350, transport = 180, phone = 15, lunch = 200, entertainment = 250, health = 0 }
+salary = { mid = 75000, senior = 95000 }
+
+[city.Copenhagen]
+country = "Denmark"
+currency = "DKK"
+tax = "Denmark"
+match = ["copenhagen", "denmark", "aarhus"]
+cost = { rent = 13000, utilities = 1000, internet = 250, groceries = 3000, transport = 500, phone = 150, lunch = 1000, entertainment = 2000, health = 0 }
+salary = { mid = 650000, senior = 780000 }
+
+[city.Stockholm]
+country = "Sweden"
+currency = "SEK"
+tax = "Sweden"
+match = ["stockholm", "sweden", "gothenburg"]
+cost = { rent = 15000, utilities = 800, internet = 400, groceries = 3500, transport = 1000, phone = 250, lunch = 2000, entertainment = 2500, health = 0 }
+salary = { mid = 600000, senior = 720000 }
+
+[city.Luxembourg]
+country = "Luxembourg"
+currency = "EUR"
+tax = "Luxembourg"
+match = ["luxembourg"]
+cost = { rent = 1900, utilities = 200, internet = 50, groceries = 450, transport = 0, phone = 20, lunch = 200, entertainment = 250, health = 0 }
+salary = { mid = 75000, senior = 90000 }
+
+# ---------------------------------------------------------------- exchange rates
+# Fetched daily from the European Central Bank; these are only the offline fallback (1 EUR = x).
+[fx_fallback]
+CHF = 0.94
+NOK = 11.7
+USD = 1.08
+CAD = 1.5
+JPY = 165
+GBP = 0.85
+DKK = 7.46
+SEK = 11.3
+
+# Official tax calculators to double-check a real offer:
+#   CH  https://swisstaxcalculator.estv.admin.ch      NO  https://www.skatteetaten.no/en/calculator/
+#   US  https://smartasset.com/taxes/income-taxes      CA  https://www.wealthsimple.com/en-ca/tool/tax-calculator
+#   JP  https://www.nta.go.jp                          DE  https://www.bmf-steuerrechner.de
+#   FR  https://mon-entreprise.urssaf.fr/simulateurs/salaire-brut-net

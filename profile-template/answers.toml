@@ -1,0 +1,38 @@
+# Standard answers for application forms. Leave a value empty ("") if you don't know it yet —
+# Claude will ask you when a form needs it and save your answer here.
+
+[identity]
+first_name = ""
+last_name = ""
+email = ""
+phone = ""                     # with country code, e.g. "+44 20 1234 5678"
+location = ""                  # where you live now, e.g. "Lisbon, Portugal"
+linkedin = ""                  # full URL
+github = ""
+portfolio = ""
+
+[work]
+current_title = ""
+current_company = ""
+years_experience = 0
+notice_period = ""             # e.g. "1 month", "3 months"
+earliest_start = ""            # e.g. "1 month after offer"
+nationality = ""
+willing_to_relocate = true
+# Work authorization and visa sponsorship are answered per job country, from
+# preferences.toml → [visa] work_without_visa / needs_sponsorship.
+
+[salary]
+current_gross = 0
+current_currency = ""          # e.g. "EUR"
+expectation_note = "Open, in line with market for the role and location."
+# Per-country expectations, saved as you answer forms, e.g.:
+# germany_expectation = "75,000 EUR"
+# switzerland_expectation = "120,000 CHF"
+
+[diversity]
+# Voluntary questions. "Prefer not to say" is always fine.
+gender = "Prefer not to say"
+ethnicity = "Prefer not to say"
+veteran = "Prefer not to say"
+disability = "Prefer not to say"

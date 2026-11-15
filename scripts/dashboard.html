@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Hunt</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1b1f24; --muted: #667085; --line: #e4e7ec;
+  --accent: #2f5bea; --accent-soft: #dbe4ff; --t1: #2f5bea; --t2: #7c93e8; --t3: #c3cad8;
+  --good: #12805c; --warn: #b54708; --bad: #b42318; --found: #98a2b3;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1216; --panel: #171b21; --ink: #e6e9ef; --muted: #98a2b3; --line: #262c35;
+    --accent: #7b9cff; --accent-soft: #23305a; --t1: #7b9cff; --t2: #4d63b0; --t3: #3a4252;
+    --good: #47cd89; --warn: #f79009; --bad: #f97066; --found: #4b5565;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between;
+  padding: 20px 24px 8px; }
+h1 { font-size: 20px; margin: 0; }
+h2 { font-size: 13px; margin: 0 0 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.sub { color: var(--muted); font-size: 13px; }
+main { padding: 8px 24px 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 1400px; margin: 0 auto; }
+main > *, .grid2 > * { min-width: 0; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.kpi, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.kpi .v { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.kpi .l { color: var(--muted); font-size: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; }
+.bars { display: grid; grid-template-columns: minmax(90px, max-content) 1fr 48px; gap: 6px 10px; align-items: center; }
+.bars .lab { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.bars .lab.click { cursor: pointer; } .bars .lab.click:hover { color: var(--accent); text-decoration: underline; }
+.bars .track { height: 14px; background: transparent; }
+.bars .fill { height: 100%; border-radius: 3px; min-width: 2px; }
+.bars .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 10px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+svg text { fill: var(--muted); font-size: 11px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--panel); }
+td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tablewrap { max-height: 640px; overflow: auto; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
+input, select, button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 8px; }
+input[type=search] { min-width: 220px; }
+button { cursor: pointer; } button:hover { border-color: var(--accent); }
+a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+.pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.empty { color: var(--muted); padding: 20px 0; text-align: center; }
+.err { color: var(--bad); }
+@media (max-width: 640px) {
+  header, main { padding-left: 16px; padding-right: 16px; }
+  .grid2 { grid-template-columns: 1fr; }
+  .hide-sm { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Job Hunt</h1>
+  <div class="sub" id="lastrun">Loading…</div>
+</header>
+<main>
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid2">
+    <div class="card"><h2>Pipeline</h2><div class="bars" id="funnel"></div>
+      <div class="legend" id="closed"></div></div>
+    <div class="card"><h2>Open jobs by country</h2><div class="bars" id="countries"></div>
+      <div class="legend"><span><i style="background:var(--t1)"></i>Tier 1 target</span>
+        <span><i style="background:var(--t2)"></i>Tier 2</span><span><i style="background:var(--t3)"></i>Other / remote</span></div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Activity · last 30 days</h2><div id="activity"></div>
+      <div class="legend"><span><i style="background:var(--found)"></i>Jobs found</span>
+        <span><i style="background:var(--accent)"></i>Applied</span></div></div>
+    <div class="card"><h2>Your stack in open jobs</h2><div class="bars" id="stack"></div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>Core stack</span>
+        <span><i style="background:var(--t2)"></i>Stretch / new challenge</span></div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Top companies</h2><div class="bars" id="companies"></div></div>
+    <div class="card"><h2>Salaries published in postings</h2><div id="salary"></div></div>
+  </section>
+
+  <section class="card">
+    <h2>Jobs</h2>
+    <div class="filters">
+      <input type="search" id="f-q" placeholder="Search title, company or description">
+      <select id="f-status"><option value="">Open (all but closed)</option></select>
+      <select id="f-country"><option value="">All countries</option></select>
+      <select id="f-company"><option value="">All companies</option></select>
+      <label><input type="checkbox" id="f-remote"> Remote</label>
+      <label><input type="checkbox" id="f-salary"> Has salary</label>
+      <select id="f-sort">
+        <option value="">Newest</option><option value="score">Best score</option>
+        <option value="salary">Highest salary</option><option value="viability">Best savings (viability)</option>
+        <option value="company">Company</option>
+      </select>
+      <button id="f-reset">Reset</button>
+      <span class="sub" id="count"></span>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Company</th><th>Title</th><th class="hide-sm">Location</th><th class="hide-sm">Score</th>
+        <th class="hide-sm">Salary</th><th class="hide-sm" title="Estimated monthly savings after tax, cost of living and your fixed costs. Only filled when you run the viability check.">Saves / month</th>
+        <th class="hide-sm">Posted</th><th>Status</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script>
+const TOKEN = "__TOKEN__";
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "text") e.textContent = v; else if (k === "style") e.style.cssText = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const k of kids) e.append(k);
+  return e;
+};
+const fmt = (n) => n == null ? "—" : Number(n).toLocaleString("en-US");
+const safeUrl = (u) => /^https?:\/\//i.test(u || "") ? u : null;   // data comes from external job boards
+
+function bars(target, data, { color = () => "var(--accent)", onClick = null, label = (d) => d.k } = {}) {
+  const box = $(target); box.replaceChildren();
+  if (!data.length) { box.append(el("div", { class: "empty", text: "No data yet" })); return; }
+  const max = Math.max(...data.map((d) => d.n), 1);
+  for (const d of data) {
+    const lab = el("div", { class: "lab" + (onClick ? " click" : ""), text: label(d), title: label(d) });
+    if (onClick) lab.addEventListener("click", () => onClick(d));
+    box.append(lab,
+      el("div", { class: "track" }, el("div", { class: "fill", style: `width:${(100 * d.n) / max}%;background:${color(d)}` })),
+      el("div", { class: "num", text: fmt(d.n) }));
+  }
+}
+
+function activity(data) {
+  const box = $("activity"); box.replaceChildren();
+  const days = [];
+  for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d.toISOString().slice(0, 10)); }
+  const by = Object.fromEntries(data.map((r) => [r.d, r]));
+  const W = 600, H = 180, pad = 24, bw = (W - pad) / days.length;
+  const max = Math.max(1, ...days.map((d) => (by[d]?.found || 0)), ...days.map((d) => (by[d]?.applied || 0)));
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H + 20}`); svg.setAttribute("width", "100%");
+  const add = (tag, a) => { const n = document.createElementNS(NS, tag); for (const k in a) n.setAttribute(k, a[k]); svg.append(n); return n; };
+  add("line", { x1: pad, x2: W, y1: H, y2: H, stroke: "var(--line)" });
+  add("text", { x: 0, y: 10 }).textContent = fmt(max);
+  add("text", { x: 0, y: H }).textContent = "0";
+  days.forEach((d, i) => {
+    const r = by[d] || {}, x = pad + i * bw;
+    for (const [key, col, off] of [["found", "var(--found)", 0], ["applied", "var(--accent)", bw / 2]]) {
+      const v = r[key] || 0, h = (v / max) * (H - 14);
+      const rect = add("rect", { x: x + off + 1, y: H - h, width: Math.max(bw / 2 - 2, 1), height: h, fill: col, rx: 1 });
+      const t = document.createElementNS(NS, "title"); t.textContent = `${d}: ${v} ${key}`; rect.append(t);
+    }
+    if (i % 7 === 0 || i === days.length - 1) add("text", { x: x, y: H + 15 }).textContent = d.slice(5);
+  });
+  box.append(svg);
+}
+
+function salary(data) {
+  const box = $("salary"); box.replaceChildren();
+  if (!data.length) { box.append(el("div", { class: "empty", text: "No salaries published yet" })); return; }
+  const t = el("table", {}, el("thead", {}, el("tr", {},
+    ...["Currency", "Jobs", "Lowest", "Average mid", "Highest"].map((h) => el("th", { text: h })))));
+  const tb = el("tbody");
+  for (const r of data) tb.append(el("tr", {}, el("td", { text: r.k }), el("td", { class: "n", text: fmt(r.n) }),
+    el("td", { class: "n", text: fmt(r.lo) }), el("td", { class: "n", text: fmt(r.mid) }), el("td", { class: "n", text: fmt(r.hi) })));
+  t.append(tb); box.append(t,
+    el("div", { class: "sub", style: "margin-top:8px", text: "Mostly US/Canada postings, where pay ranges are legally required. Annual, gross." }));
+}
+
+function kpis(k) {
+  const items = [["Open jobs", k.open], ["New (24h)", k.new_24h], ["Queued / approved", k.queued],
+    ["Applied", k.applied], ["Interviews", k.interviews], ["Offers", k.offers],
+    ["Response rate", k.response_rate == null ? "—" : k.response_rate + "%"]];
+  $("kpis").replaceChildren(...items.map(([l, v]) =>
+    el("div", { class: "kpi" }, el("div", { class: "v", text: typeof v === "number" ? fmt(v) : v }), el("div", { class: "l", text: l }))));
+}
+
+function fillSelect(id, values) {
+  const s = $(id), keep = s.value;
+  s.replaceChildren(s.options[0]);
+  for (const v of values) s.append(el("option", { value: v, text: v }));
+  s.value = keep;
+}
+
+let STATUSES = [];
+async function loadStats() {
+  const s = await (await fetch("/api/stats")).json();
+  STATUSES = s.filters.statuses;
+  kpis(s.kpi);
+  bars("funnel", s.funnel, { onClick: (d) => setFilter("f-status", d.k) });
+  $("closed").replaceChildren(...s.closed.map((c) => el("span", { text: `${c.k}: ${fmt(c.n)}` })));
+  bars("countries", s.by_country, { color: (d) => `var(--t${d.tier})`, onClick: (d) => setFilter("f-country", d.k) });
+  bars("companies", s.by_company, { onClick: (d) => setFilter("f-company", d.k) });
+  bars("stack", s.stack, { color: (d) => d.core ? "var(--accent)" : "var(--t2)" });
+  activity(s.per_day);
+  salary(s.salary);
+  const r = s.last_run[0] || {};
+  $("lastrun").textContent = r.at ? `Last fetch ${r.at} UTC · ${fmt(r.fetched)} postings scanned · ${fmt(r.new)} new` +
+    (r.errors ? ` · ${r.errors} board errors` : "") : "No fetch yet — run: python scripts/fetch_jobs.py";
+  fillSelect("f-status", s.filters.statuses);
+  fillSelect("f-country", s.filters.countries);
+  fillSelect("f-company", s.filters.companies);
+}
+
+function setFilter(id, v) { $(id).value = v; loadJobs(); $("rows").closest("section").scrollIntoView({ behavior: "smooth" }); }
+
+async function setStatus(id, status, sel) {
+  sel.disabled = true;
+  const res = await fetch(`/api/jobs/${id}/status`, { method: "POST",
+    headers: { "Content-Type": "application/json", "X-Token": TOKEN }, body: JSON.stringify({ status }) });
+  sel.disabled = false;
+  if (!res.ok) { sel.classList.add("err"); return; }
+  loadStats();
+}
+
+async function loadJobs() {
+  const p = new URLSearchParams();
+  for (const [k, id] of [["q", "f-q"], ["status", "f-status"], ["country", "f-country"], ["company", "f-company"], ["sort", "f-sort"]])
+    if ($(id).value) p.set(k, $(id).value);
+  if ($("f-remote").checked) p.set("remote", "1");
+  if ($("f-salary").checked) p.set("salary", "1");
+  const jobs = await (await fetch("/api/jobs?" + p)).json();
+  $("count").textContent = jobs.length >= 300 ? "showing first 300" : `${jobs.length} jobs`;
+  const tb = $("rows"); tb.replaceChildren();
+  if (!jobs.length) { tb.append(el("tr", {}, el("td", { colspan: 8, class: "empty", text: "No jobs match" }))); return; }
+  for (const j of jobs) {
+    const url = safeUrl(j.url);
+    const title = url ? el("a", { href: url, target: "_blank", rel: "noopener noreferrer", text: j.title }) : el("span", { text: j.title });
+    const sel = el("select", { onchange: (e) => setStatus(j.id, e.target.value, e.target) },
+      ...STATUSES.map((s) => { const o = el("option", { value: s, text: s }); if (s === j.status) o.selected = true; return o; }));
+    const sal = j.salary_min ? `${fmt(j.salary_min)}${j.salary_max && j.salary_max !== j.salary_min ? "–" + fmt(j.salary_max) : ""} ${j.currency || ""}` : "";
+    tb.append(el("tr", {},
+      el("td", { text: j.company }),
+      el("td", {}, title, j.remote ? el("span", { text: " " }) : "", j.remote ? el("span", { class: "pill", text: "remote" }) : ""),
+      el("td", { class: "hide-sm", text: j.country || j.location || "" , title: j.location || "" }),
+      el("td", { class: "n hide-sm", text: j.score == null ? "—" : Math.round(j.score) }),
+      el("td", { class: "n hide-sm", text: sal }),
+      el("td", { class: "n hide-sm", text: j.viability_eur_month == null ? "" : fmt(j.viability_eur_month),
+        style: j.viability_eur_month == null ? "" : `color:var(${j.viability_eur_month > 0 ? "--good" : "--bad"})` }),
+      el("td", { class: "n hide-sm", text: (j.posted_at || "").slice(0, 10) }),
+      el("td", {}, sel)));
+  }
+}
+
+let t;
+$("f-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(loadJobs, 250); });
+for (const id of ["f-status", "f-country", "f-company", "f-sort", "f-remote", "f-salary"]) $(id).addEventListener("change", loadJobs);
+$("f-reset").addEventListener("click", () => {
+  for (const id of ["f-q", "f-status", "f-country", "f-company", "f-sort"]) $(id).value = "";
+  $("f-remote").checked = $("f-salary").checked = false; loadJobs();
+});
+
+loadStats().then(loadJobs).catch((e) => { $("lastrun").textContent = "Error: " + e; });
+</script>
+</body>
+</html>

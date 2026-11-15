@@ -1,0 +1,9 @@
+# Your personal data never goes into Git
+profile/
+data/
+output/
+*.pdf
+*.docx
+*.xlsx
+__pycache__/
+.DS_Store
