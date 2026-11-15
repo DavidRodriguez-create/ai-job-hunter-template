@@ -25,11 +25,14 @@ scripts/
   dashboard.py/.html     local stats UI                    --port 8765 · --no-open
   viability.py           salary vs cost of living          --compare · --city X --salary N · --job <id> · --queued · --top N
                                                            --set-salary <id> <amount> <CUR> --source "..."
-  daily.py               fetch + score + queue + todo list --queue N · --viability
+  daily.py               fetch + score + queue + forms     --queue N · --viability   (defaults from [autopilot])
+  check_forms.py         form check per queued/approved    --recheck   (Greenhouse questions via public API)
   apply_packet.py        form answers for one job          <id> · --approved
+  apply_batch.py         daily application batch + lock    --prepare · --done <id> · --failed <id> "why" · --release · --status
 .claude/skills/job-hunt-setup/SKILL.md   Claude: first-time setup from the user's CV / LinkedIn PDF
 .claude/skills/job-hunt/SKILL.md         Claude: daily run, tailoring, viability, applying
-data/jobs.db             SQLite database (git-ignored)
+data/jobs.db             SQLite database (git-ignored); new columns are added automatically (db.MIGRATIONS)
+data/apply_batch.json    today's batch; data/apply.lock = a batch is being sent (expires after 3 h)
 output/<id>-<company>/   tailor.json, cv.pdf, cover_letter.pdf (git-ignored)
 ```
 

@@ -1,0 +1,140 @@
+"""The daily application batch: which jobs to send today, plus a lock so two runs never overlap.
+
+    python scripts/apply_batch.py --prepare          # build today's batch (data/apply_batch.json) and take the lock
+    python scripts/apply_batch.py --done 42         # an application was submitted -> status 'applied'
+    python scripts/apply_batch.py --failed 42 "CAPTCHA"   # couldn't finish -> stays in the list, note saved
+    python scripts/apply_batch.py --release          # end of the run: free the lock
+    python scripts/apply_batch.py --status           # lock + today's numbers
+
+Settings: [autopilot] in profile/preferences.toml (apply_include, max_applications_per_day).
+This script never submits anything itself: Claude does, after the user's "send" reply in the chat.
+"""
+import argparse
+import json
+import os
+import sys
+import tomllib
+from datetime import datetime, timedelta
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import db  # noqa: E402
+from apply_packet import packet  # noqa: E402
+
+ROOT = Path(__file__).resolve().parent.parent
+PREFS = tomllib.loads((ROOT / "profile" / "preferences.toml").read_text(encoding="utf-8"))
+AUTO = PREFS.get("autopilot", {})
+INCLUDE = [s for s in AUTO.get("apply_include", ["approved"]) if s in ("approved", "queued")] or ["approved"]
+MAX_PER_DAY = int(AUTO.get("max_applications_per_day", 20))
+LOCK = ROOT / "data" / "apply.lock"
+BATCH = ROOT / "data" / "apply_batch.json"
+STALE_AFTER = timedelta(hours=3)
+
+
+def lock_info() -> dict | None:
+    try:
+        info = json.loads(LOCK.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    started = datetime.fromisoformat(info["started"])
+    if datetime.now() - started > STALE_AFTER:  # a run that crashed long ago doesn't block forever
+        LOCK.unlink(missing_ok=True)
+        return None
+    return info
+
+
+def applied_today(conn) -> int:
+    return conn.execute("SELECT COUNT(*) FROM jobs WHERE status='applied' AND date(applied_at)=date('now')").fetchone()[0]
+
+
+def prepare(conn) -> int:
+    held = lock_info()
+    if held:
+        print(f"An application run is already in progress (started {held['started']}). Nothing to do.")
+        return 3
+    left = max(0, MAX_PER_DAY - applied_today(conn))
+    marks = ",".join("?" * len(INCLUDE))
+    rows = conn.execute(f"""SELECT * FROM jobs WHERE status IN ({marks})
+                            ORDER BY status='approved' DESC, score DESC""", INCLUDE).fetchall()
+    ready, needs_you, needs_cv, over_cap = [], [], [], []
+    for j in rows:
+        p = packet(j)
+        p["id"] = j["id"]
+        problems = []
+        if j["form_status"] == "needs_you":
+            problems.append(json.loads(j["form_info"] or "{}").get("reason", "needs a login"))
+        problems += p["form"].get("missing", [])  # answers this job's form requires that you haven't given yet
+        if not problems and not j["cv_path"]:
+            needs_cv.append(p)  # Claude writes the CV first, then runs --prepare again
+            continue
+        if problems:
+            p["problems"] = problems
+            needs_you.append(p)
+        elif len(ready) < left:
+            ready.append(p)
+        else:
+            over_cap.append(p)
+    if not ready and not needs_you and not needs_cv:
+        print(f"Nothing to apply to today (looking at: {', '.join(INCLUDE)}).")
+        return 0
+    BATCH.parent.mkdir(exist_ok=True)
+    BATCH.write_text(json.dumps({"created": datetime.now().isoformat(timespec="seconds"), "include": INCLUDE,
+                                 "ready": ready, "needs_you": needs_you,
+                                 "needs_cv": [p["id"] for p in needs_cv], "over_cap": [p["id"] for p in over_cap]},
+                                indent=2, ensure_ascii=False), encoding="utf-8")
+    if ready:
+        LOCK.write_text(json.dumps({"started": datetime.now().isoformat(timespec="seconds"), "pid": os.getpid()}),
+                        encoding="utf-8")
+    print(f"TODAY'S BATCH  (from: {', '.join(INCLUDE)} · cap {MAX_PER_DAY}/day, {left} left today)\n")
+    print(f"READY TO SEND ({len(ready)}):")
+    for n, p in enumerate(ready, 1):
+        print(f"  {n:>2}. [{p['status']}] {p['job']}")
+    if needs_cv:
+        print(f"\nNEED A TAILORED CV FIRST ({len(needs_cv)}): write them, then run --prepare again:")
+        for p in needs_cv:
+            print(f"   - {p['job']}")
+    if needs_you:
+        print(f"\nNEED YOU FIRST ({len(needs_you)}):")
+        for p in needs_you:
+            print(f"   - {p['job']}: {'; '.join(p['problems'])}")
+    if over_cap:
+        print(f"\nOver today's cap, kept for tomorrow: {len(over_cap)}")
+    print(f"\nDetails: {BATCH}")
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--prepare", action="store_true")
+    g.add_argument("--done", type=int)
+    g.add_argument("--failed", nargs="+", metavar=("JOB_ID", "REASON"))
+    g.add_argument("--release", action="store_true")
+    g.add_argument("--status", action="store_true")
+    args = ap.parse_args()
+    sys.stdout.reconfigure(encoding="utf-8")
+    conn = db.connect()
+    db.init(conn)
+    if args.prepare:
+        sys.exit(prepare(conn))
+    if args.done:
+        db.set_status(conn, args.done, "applied", "submitted in daily batch")
+        print(f"#{args.done} marked applied. Applied today: {applied_today(conn)}")
+    elif args.failed:
+        jid, reason = int(args.failed[0]), " ".join(args.failed[1:]) or "unknown"
+        conn.execute("UPDATE jobs SET apply_attempts = COALESCE(apply_attempts,0) + 1, "
+                     "notes = TRIM(COALESCE(notes,'') || char(10) || ?) WHERE id=?",
+                     (f"{datetime.now():%Y-%m-%d} apply failed: {reason}", jid))
+        conn.commit()
+        print(f"#{jid} kept in the list; reason saved: {reason}")
+    elif args.release:
+        LOCK.unlink(missing_ok=True)
+        print("Lock released.")
+    elif args.status:
+        held = lock_info()
+        print(f"Application run in progress: {'yes, since ' + held['started'] if held else 'no'}")
+        print(f"Applied today: {applied_today(conn)} / {MAX_PER_DAY}")
+
+
+if __name__ == "__main__":
+    main()

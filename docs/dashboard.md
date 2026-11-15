@@ -10,9 +10,19 @@ python scripts/dashboard.py
 
 Your browser opens **http://127.0.0.1:8765**. Keep the terminal open while you use it; press `Ctrl + C` there to stop it.
 
-## What you'll see
+## Today (top of the page)
 
-- **Numbers at the top:** open jobs, new today, approved, applied, interviews, offers, and your response rate.
+Everything waiting for you, in one list: today's **queued** picks and the jobs you **approved**.
+
+- Counters: **ready to send**, **CV being written**, **need you**, **applied today**.
+- Each job shows its score, monthly savings (if checked), whether its form is ready, and links to its **CV ↗** and **Letter ↗**.
+- **Approve** (click again to undo) or **Skip** with one click. **Approve all ready** approves every queued job with nothing missing.
+- Orange **"Needs you"** lines say exactly what's missing, like *your salary expectation for Germany*. Tell Claude once and it's remembered.
+- The top line shows your [autopilot](autopilot.md) settings, and *"Sending applications…"* while a batch is being sent.
+
+## Everything else
+
+- **Numbers:** open jobs, new today, approved, applied, interviews, offers, and your response rate.
 - **Pipeline:** how many jobs are at each step (new → scored → queued → approved → applied → interview → offer).
 - **Jobs by country**, coloured by how high each country is on your list.
 - **Activity:** jobs found and applications sent over the last 30 days.

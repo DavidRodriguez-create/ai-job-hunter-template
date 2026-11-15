@@ -84,8 +84,20 @@ def connect(path: Path = DB_PATH) -> sqlite3.Connection:
     return conn
 
 
+# Columns added after the first version: (name, type). Added automatically to older databases.
+MIGRATIONS = [
+    ("form_status", "TEXT"),       # ready | needs_you | unknown: can the form be filled without a login?
+    ("form_info", "TEXT"),         # JSON: ATS, required custom questions, reason if needs_you
+    ("apply_attempts", "INTEGER DEFAULT 0"),
+]
+
+
 def init(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    have = {r[1] for r in conn.execute("PRAGMA table_info(jobs)")}
+    for name, typ in MIGRATIONS:
+        if name not in have:
+            conn.execute(f"ALTER TABLE jobs ADD COLUMN {name} {typ}")
     conn.commit()
 
 

@@ -6,11 +6,18 @@
 
 Install the **Claude in Chrome** extension and sign in. Claude then works in *your* Chrome, where you're already logged in to your accounts.
 
-## How it works
+## The easy way: one batch a day
 
-1. In the [dashboard](dashboard.md), set the jobs you want to **approved**.
-2. Tell Claude: **"apply to my approved jobs"**.
-3. For each job, Claude:
+With [autopilot](autopilot.md), at 13:00 Claude prepares every waiting job (approved and queued, or only approved:
+your choice) and shows you the list. You reply **"send all"** (or *"send 1-5"*, *"send all except 3"*), and it
+fills and submits them all. To send right away, tell Claude **"send my applications"**, or press **Run now** on
+*Daily applications* under **Scheduled** in the Claude app.
+
+## One job at a time
+
+1. In the [dashboard](dashboard.md), set the job to **approved**.
+2. Tell Claude: **"apply to job 42"**.
+3. Claude:
    - opens the application page in Chrome
    - **shows you** what it will fill in: your details, the CV and cover letter, and drafts for any written questions
    - waits for your OK, then fills the form and uploads your CV

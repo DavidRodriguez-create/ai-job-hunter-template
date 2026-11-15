@@ -171,7 +171,11 @@ def main():
 
     if args.queue:
         # best first, max 2 per company so one employer doesn't fill the batch
-        picked, per_co, too_low, seen_roles = [], {}, 0, set()
+        picked, per_co, too_low = [], {}, 0
+        role_key = lambda company, title: (company, re.sub(r"\W+", " ", title.lower()).strip())
+        # roles already in your pipeline (queued / approved / applied…) are never queued again from another location
+        seen_roles = {role_key(r["company"], r["title"]) for r in conn.execute(
+            "SELECT company, title FROM jobs WHERE status NOT IN ('new','scored','closed')")}
         if args.viability:
             import viability
             min_gain = viability.MIN_GAIN
@@ -179,7 +183,7 @@ def main():
                               "ORDER BY score DESC, posted_at DESC", (args.min_score,)).fetchall():
             if per_co.get(j["company"], 0) >= 2:
                 continue
-            role = (j["company"], re.sub(r"\W+", " ", j["title"].lower()).strip())
+            role = role_key(j["company"], j["title"])
             if role in seen_roles:  # same role posted in several locations: keep the best-scored one
                 continue
             if args.viability:

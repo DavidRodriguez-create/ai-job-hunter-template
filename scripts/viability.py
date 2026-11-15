@@ -2,10 +2,10 @@
 
     python scripts/viability.py --compare                  # every city at typical mid/senior salary
     python scripts/viability.py --city Zurich --salary 125000
-    python scripts/viability.py --job 136                  # one job (uses posted salary, else estimate)
+    python scripts/viability.py --job 42                  # one job (uses posted salary, else estimate)
     python scripts/viability.py --queued                   # all queued/approved jobs, saves result in DB
     python scripts/viability.py --top 40                   # best 40 scored jobs, saves result in DB
-    python scripts/viability.py --set-salary 136 82000 EUR --source "levels.fyi, ExampleCorp, Munich"
+    python scripts/viability.py --set-salary 42 82000 EUR --source "levels.fyi, ExampleCorp, Munich"
 
 Model: monthly savings in your home currency ([me] home_currency) =
     net salary (gross × (1 − tax rate for that gross)) / 12 − city cost of living − your fixed costs

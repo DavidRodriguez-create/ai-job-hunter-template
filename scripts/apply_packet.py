@@ -1,6 +1,6 @@
 """Everything needed to fill one application form, in one place. Read-only.
 
-    python scripts/apply_packet.py 136        # one job
+    python scripts/apply_packet.py 42        # one job
     python scripts/apply_packet.py --approved # every job you approved
 
 Prints: URL, CV / cover-letter files, and the form answers resolved for that job's country
@@ -33,9 +33,14 @@ def packet(job) -> dict:
         "url": job["url"],
         "status": job["status"],
         "files": {"cv": job["cv_path"] or "ASK: not tailored yet", "cover_letter": job["cover_letter_path"]},
+        "form": json.loads(job["form_info"]) if "form_info" in job.keys() and job["form_info"] else {},
         "answers": {
-            "first_name": i["first_name"], "last_name": i["last_name"], "email": i["email"], "phone": i["phone"],
-            "location": i["location"], "linkedin": i["linkedin"], "github": i["github"], "website": i["portfolio"],
+            "first_name": i["first_name"], "last_name": i["last_name"],
+            "legal_name": i.get("legal_name") or f"{i['first_name']} {i['last_name']}",
+            "email": i["email"], "phone": i["phone"],
+            "location": i["location"], "postal_code": i.get("postal_code") or "ASK",
+            "linkedin": i["linkedin"], "github": i["github"], "website": i["portfolio"],
+            "countries_with_right_to_work": ", ".join(c for c in sorted(FREE_MOVEMENT) if not c.startswith("Remote")),
             "current_company": w["current_company"], "current_title": w["current_title"],
             "years_experience": w["years_experience"],
             "authorized_to_work_in_job_country": "Yes" if authorized else

@@ -52,3 +52,11 @@ needs_sponsorship = ["United States", "Canada", "Japan", "United Kingdom"]
 
 [viability]
 enabled_by_default = false            # the "is it worth it?" check only runs when you ask for it
+
+[autopilot]
+# Daily routine (see docs/autopilot.md). Change any value; takes effect at the next run.
+queue_per_day = 15                     # best new matches queued each morning
+worth_it_filter = false                # true = only queue jobs that are worth it money-wise (docs/worth-it.md)
+apply_include = ["approved", "queued"] # which jobs go into the daily application batch
+max_applications_per_day = 20          # safety cap per day
+apply_time = "13:00"                   # when the batch is prepared (weekdays); informational, set in the schedule

@@ -157,6 +157,48 @@ def jobs(conn, q: dict) -> list[dict]:
     return rows(conn, sql, args)
 
 
+def today(conn) -> dict:
+    """Everything for the 'Today' panel: the jobs waiting for you and the autopilot status."""
+    import apply_batch  # reads the lock and the [autopilot] settings
+    prefs = tomllib.loads((ROOT / "profile" / "preferences.toml").read_text(encoding="utf-8"))
+    auto = prefs.get("autopilot", {})
+    waiting = []
+    for r in conn.execute("""SELECT id, company, title, country, url, status, score, viability_eur_month,
+                                    form_status, form_info, cv_path, cover_letter_path, notes
+                             FROM jobs WHERE status IN ('queued','approved')
+                             ORDER BY status='approved' DESC, score DESC"""):
+        info = json.loads(r["form_info"] or "{}")
+        problems = list(info.get("missing", []))
+        if r["form_status"] == "needs_you":
+            problems.insert(0, info.get("reason", "needs a login"))
+        waiting.append({k: r[k] for k in ("id", "company", "title", "country", "url", "status", "score",
+                                          "viability_eur_month", "form_status")}
+                       | {"problems": problems, "has_cv": bool(r["cv_path"]), "has_letter": bool(r["cover_letter_path"]),
+                          "in_batch": r["status"] in apply_batch.INCLUDE})
+    held = apply_batch.lock_info()
+    return {
+        "autopilot": {"queue_per_day": auto.get("queue_per_day", 15), "worth_it_filter": bool(auto.get("worth_it_filter")),
+                      "apply_include": apply_batch.INCLUDE, "max_per_day": apply_batch.MAX_PER_DAY,
+                      "apply_time": auto.get("apply_time", "13:00")},
+        "running_since": held["started"] if held else None,
+        "applied_today": apply_batch.applied_today(conn),
+        "waiting": waiting,
+        "recent_applied": rows(conn, """SELECT id, company, title, country, applied_at FROM jobs
+                                        WHERE status='applied' ORDER BY applied_at DESC LIMIT 8"""),
+    }
+
+
+def job_file(conn, job_id: int, kind: str) -> Path | None:
+    """The tailored CV / cover letter PDF of a job, only if it lives inside output/."""
+    col = {"cv": "cv_path", "letter": "cover_letter_path"}.get(kind)
+    row = conn.execute(f"SELECT {col} FROM jobs WHERE id=?", (job_id,)).fetchone() if col else None
+    if not row or not row[0]:
+        return None
+    p = Path(row[0]).resolve()
+    out = (ROOT / "output").resolve()
+    return p if p.suffix == ".pdf" and out in p.parents and p.is_file() else None
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "jobhunt"
 
@@ -196,22 +238,36 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(stats(conn))
             if url.path == "/api/jobs":
                 return self._json(jobs(conn, q))
+            if url.path == "/api/today":
+                return self._json(today(conn))
+            m = re.fullmatch(r"/files/(\d+)/(cv|letter)\.pdf", url.path)
+            if m and (f := job_file(conn, int(m.group(1)), m.group(2))):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/pdf")
+                self.send_header("Content-Disposition", f'inline; filename="{m.group(2)}-{m.group(1)}.pdf"')
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(f.read_bytes())
+                return
         self._send(404, b"not found", "text/plain")
 
     def do_POST(self):
         if not self._host_ok() or not secrets.compare_digest(self.headers.get("X-Token", ""), TOKEN):
             return self._send(403, b"forbidden", "text/plain")
-        m = re.fullmatch(r"/api/jobs/(\d+)/status", urlparse(self.path).path)
-        if not m:
+        path = urlparse(self.path).path
+        m = re.fullmatch(r"/api/jobs/(\d+)/status", path)
+        if not m and path != "/api/jobs/bulk-status":
             return self._send(404, b"not found", "text/plain")
-        length = min(int(self.headers.get("Content-Length") or 0), 10_000)
+        length = min(int(self.headers.get("Content-Length") or 0), 100_000)
         try:
             body = json.loads(self.rfile.read(length) or b"{}")
+            ids = [int(m.group(1))] if m else [int(i) for i in body.get("ids", [])][:500]
             with db.connect() as conn:
-                db.set_status(conn, int(m.group(1)), body.get("status", ""), body.get("note") or "dashboard")
-        except (ValueError, KeyError) as e:
+                for jid in ids:
+                    db.set_status(conn, jid, body.get("status", ""), body.get("note") or "dashboard")
+        except (ValueError, KeyError, TypeError) as e:
             return self._json({"error": str(e)}, 400)
-        self._json({"ok": True})
+        self._json({"ok": True, "changed": len(ids)})
 
 
 def main():

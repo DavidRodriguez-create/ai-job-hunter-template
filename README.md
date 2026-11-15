@@ -79,15 +79,20 @@ Click any item for a short guide.
 | 📄 | [**Tailored CV & cover letter**](docs/tailored-cv.md) | A one-page CV and letter for each job, using only facts from your resume. It refuses to invent anything. |
 | 📊 | [**Dashboard**](docs/dashboard.md) | A private page in your browser to see statistics and approve or skip jobs. |
 | 💶 | [**Is it worth it? (optional)**](docs/worth-it.md) | Estimates how much you'd *save per month* in each city after taxes, rent and your fixed costs. Only when you ask. |
-| 📝 | [**Apply**](docs/apply.md) | Claude fills the application form in your Chrome; you check it and say when to press Submit. |
-| ⏰ | [**Daily schedule**](docs/schedule.md) | Runs everything automatically every weekday morning and tells you when it's done. |
+| 📝 | [**Apply**](docs/apply.md) | Claude fills and submits the application forms in your Chrome, one batch a day, after your one-word OK. |
+| 🛫 | [**Autopilot**](docs/autopilot.md) | Set up once: every weekday it finds, filters, writes CVs and prepares applications; you reply "send all". |
+| ⏰ | [**Daily schedule**](docs/schedule.md) | The two daily runs (08:00 search, 13:00 applications) and how to run them by hand. |
 
 ## A normal week
 
-1. **Morning:** you get a notification: *"15 new jobs queued, CVs ready"*.
-2. **5 minutes:** open the dashboard, mark the jobs you like as **approved** and the rest as **skipped**.
-3. **When you have time:** tell Claude *"apply to my approved jobs"*. It shows you each form before filling it and asks before every Submit.
+With [autopilot](docs/autopilot.md) on:
+
+1. **08:00, automatic:** new jobs found, the best ones queued, CVs and cover letters written, forms checked.
+2. **Any time, optional:** glance at the dashboard's **Today** panel: **Approve** or **Skip** with one click.
+3. **13:00:** a notification: *"Applications ready: 9 to send"*. Reply **"send all"**, and Claude submits them in your Chrome.
 4. **Later:** change a job to **interview**, **offer** or **rejected** in the dashboard to track your progress.
+
+Nothing is ever sent without that reply. Prefer to do it by hand? Every step also works on its own ([apply](docs/apply.md)).
 
 ## Your privacy
 
