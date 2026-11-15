@@ -27,7 +27,8 @@ You still save almost all the work: you don't fill anything in, you don't upload
 ## Set it up (once)
 
 1. Your profile is filled in ([getting started](getting-started.md)).
-2. The **Claude in Chrome** extension is installed and signed in, so Claude can use your browser.
+2. The **Claude in Chrome** extension is installed and switched on, so Claude can use your browser
+   ([how, in 4 steps](apply.md#before-the-first-time-connect-claude-in-chrome)).
 3. Ask Claude: *"set up autopilot"*. It creates the two daily schedules (08:00 and 13:00, weekdays).
 4. *Optional:* tune the settings below.
 
@@ -46,6 +47,20 @@ In `profile/preferences.toml`, under `[autopilot]`:
 
 To change the **times**, edit the schedules under **Scheduled** in the Claude app.
 
+## Salary and postal-code questions
+
+Set once in `profile/answers.toml`, then used for every form:
+
+| Setting | What it does |
+|---|---|
+| `[salary] expectation_text` | Your answer when the salary box accepts text, e.g. *"I'm comfortable with the range published for this position or the market range, and happy to discuss the exact figure later."* No number is given. |
+| `[salary] numeric = "range"` | When a box only accepts numbers, a **min–max is worked out for each job**: the minimum is the highest of your [worth-it](worth-it.md) minimum for that city, the posted minimum and the typical salary there; the maximum is the posted maximum, or 15% above the minimum. A single box gets one number. You see them in the 13:00 list before anything is sent. |
+| `[salary] <country>_expectation` | *Optional* fixed answer for one country, e.g. `germany_expectation = "75,000 EUR"`. Overrides the two above. |
+| `[identity] postal_code` | Your postal code, **or** `"job_city"` to give a central postal code of the job's city (handy if you'll relocate). |
+
+> About `"job_city"`: some forms ask for the postal code of your *current* residence, and employers may use it
+> to check location or eligibility. Giving the job city's code there isn't accurate yet, so decide what's right for you.
+
 ## What can block a job
 
 The Today panel and the 13:00 message tell you exactly what's missing:
@@ -53,7 +68,7 @@ The Today panel and the 13:00 message tell you exactly what's missing:
 | Message | What to do |
 |---|---|
 | **CV pending** | Nothing. It's written automatically before sending. |
-| **your salary expectation for *country*** | Tell Claude once (e.g. *"Germany: 75,000 EUR"*). It's saved and reused for every job there. |
+| **your salary expectation for *country*** | Only shows if you haven't set `expectation_text` ([above](#salary-and-postal-code-questions)). Tell Claude once and it's saved. |
 | **your postal code** | Tell Claude once. |
 | **needs login** | The company uses a portal with accounts (Workday, Taleo…). Apply to that one yourself, or with Claude while you're there to log in. |
 

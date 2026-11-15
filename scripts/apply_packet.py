@@ -23,11 +23,34 @@ NEEDS_VISA = set(PREFS["visa"]["needs_sponsorship"])
 FREE_MOVEMENT = set(PREFS["visa"].get("work_without_visa", []))
 
 
+def salary_answers(job, s: dict) -> tuple[str, dict | None]:
+    """(text answer, numbers for number-only fields). A per-country fixed answer wins over everything."""
+    fixed = s.get(f"{(job['country'] or '').lower().replace(' ', '_')}_expectation")
+    if fixed:
+        return fixed, None
+    text = s.get("expectation_text") or ""
+    numbers = None
+    if s.get("numeric", "range") == "range":
+        try:
+            import viability  # needs profile/finances.toml
+            numbers = viability.salary_ask(dict(job))
+        except Exception:  # no finances.toml, offline FX… → Claude asks
+            numbers = None
+    return text or "ASK", numbers
+
+
+def postal_answer(job, i: dict) -> str:
+    pc = (i.get("postal_code") or "").strip()
+    if pc.lower() == "job_city":
+        return f"JOB_CITY: use a central postal code of the job's city ({job['location']})"
+    return pc or "ASK"
+
+
 def packet(job) -> dict:
     i, w, s = ANS["identity"], ANS["work"], ANS["salary"]
     country = job["country"]
     authorized = country in FREE_MOVEMENT
-    salary_key = f"{(country or '').lower().replace(' ', '_')}_expectation"
+    salary_text, salary_numbers = salary_answers(job, s)
     return {
         "job": f"#{job['id']} {job['company']} — {job['title']} ({job['location']})",
         "url": job["url"],
@@ -38,7 +61,7 @@ def packet(job) -> dict:
             "first_name": i["first_name"], "last_name": i["last_name"],
             "legal_name": i.get("legal_name") or f"{i['first_name']} {i['last_name']}",
             "email": i["email"], "phone": i["phone"],
-            "location": i["location"], "postal_code": i.get("postal_code") or "ASK",
+            "location": i["location"], "postal_code": postal_answer(job, i),
             "linkedin": i["linkedin"], "github": i["github"], "website": i["portfolio"],
             "countries_with_right_to_work": ", ".join(c for c in sorted(FREE_MOVEMENT) if not c.startswith("Remote")),
             "current_company": w["current_company"], "current_title": w["current_title"],
@@ -49,7 +72,8 @@ def packet(job) -> dict:
                 ("Yes" if country in NEEDS_VISA else "ASK"),
             "willing_to_relocate": "Yes" if w["willing_to_relocate"] else "No",
             "notice_period": w["notice_period"], "earliest_start": w["earliest_start"],
-            "salary_expectation": s.get(salary_key) or "ASK (or answer: " + s["expectation_note"] + ")",
+            "salary_expectation": salary_text,                 # for text fields
+            "salary_expectation_numbers": salary_numbers,      # for number-only fields: min / max / single
             "how_did_you_hear": "Company careers page",
             "gender": ANS["diversity"]["gender"], "ethnicity": ANS["diversity"]["ethnicity"],
             "veteran": ANS["diversity"]["veteran"], "disability": ANS["diversity"]["disability"],

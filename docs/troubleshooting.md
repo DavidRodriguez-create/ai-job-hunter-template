@@ -43,5 +43,9 @@ Normal: Windows uses Calibri, Mac uses Helvetica. Both look clean and recruiting
 **Exchange rates say "using fallback"**
 No internet at that moment; the check used saved rates instead. Results are still roughly right.
 
+**Claude says it can't use Chrome / no browser connected**
+Follow the 4 steps in [connect Claude in Chrome](apply.md#before-the-first-time-connect-claude-in-chrome).
+Make sure Google Chrome is open and the extension is signed in with the same Claude account as the app.
+
 **The daily schedule didn't run**
 The Claude app was closed. It runs the next time you open the app, or press **Run now** under *Scheduled*.

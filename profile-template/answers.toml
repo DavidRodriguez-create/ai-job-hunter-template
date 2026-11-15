@@ -7,7 +7,7 @@ last_name = ""
 email = ""
 phone = ""                     # with country code, e.g. "+44 20 1234 5678"
 location = ""                  # where you live now, e.g. "Lisbon, Portugal"
-postal_code = ""             # some forms ask for it
+postal_code = ""               # your postal code, or "job_city" = a central code in the job's city (see docs/autopilot.md)
 legal_name = ""              # if different from first + last name
 linkedin = ""                  # full URL
 github = ""
@@ -27,8 +27,12 @@ willing_to_relocate = true
 [salary]
 current_gross = 0
 current_currency = ""          # e.g. "EUR"
+# Text salary fields: this answer (no number). Leave "" to be asked per country instead.
+expectation_text = "I'm comfortable with the range published for this position, or the market range for this role and location. I'd be happy to discuss the exact figure later in the process."
+# Number-only salary fields: "range" = a min–max worked out per job (see docs/autopilot.md); "ask" = ask me.
+numeric = "range"
 expectation_note = "Open, in line with market for the role and location."
-# Per-country expectations, saved as you answer forms, e.g.:
+# Optional fixed answers per country override the above, e.g.:
 # germany_expectation = "75,000 EUR"
 # switzerland_expectation = "120,000 CHF"
 

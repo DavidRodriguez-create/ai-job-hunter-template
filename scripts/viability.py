@@ -140,6 +140,46 @@ def evaluate(job: dict) -> dict | None:
     return r
 
 
+# ---------------------------------------------------------------- salary to ask for (numbers-only form fields)
+def _round(n: float, currency: str) -> int:
+    step = 100_000 if currency == "JPY" else 10_000 if currency in ("NOK", "SEK", "DKK") else 1_000
+    return int(-(-n // step) * step)  # round up
+
+
+def worth_it_minimum(city: str) -> float:
+    """Lowest yearly gross (city currency) that beats today's savings by min_gain_per_month."""
+    target = baseline()["savings_eur"] + MIN_GAIN
+    lo, hi = 1_000.0, 100_000_000.0
+    for _ in range(60):  # savings grow with salary, so bisect
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if monthly(city, mid)["savings_eur"] < target else (lo, mid)
+    return hi
+
+
+def salary_ask(job: dict) -> dict | None:
+    """A min-max (and single number) to type when a form only accepts numbers.
+    min = the highest of: what passes your worth-it check, the posted minimum, the typical salary there.
+    max = the posted maximum, or min + 15% when nothing is posted."""
+    city = find_city(job.get("location"), job.get("country"))
+    if not city:
+        return None
+    cur = CITIES[city]["currency"]
+    to_city = lambda amount, c: to_eur(amount, c) * (FX or fx_rates()).get(cur, 1.0) if c and c != cur else amount
+    lo, hi, posted_cur = job.get("salary_min"), job.get("salary_max"), job.get("currency")
+    posted_lo = to_city(lo, posted_cur) if lo and lo >= 1000 else None
+    posted_hi = to_city(hi, posted_cur) if hi and hi >= 1000 else None
+    market = CITIES[city]["salary"][seniority(job["title"])]
+    floor = worth_it_minimum(city)
+    low = max(floor, posted_lo or market)
+    high = max(posted_hi or 0, low * 1.15)
+    basis = ("posted range" if posted_lo else f"typical {seniority(job['title'])} salary in {city}")
+    if floor >= (posted_lo or market):
+        basis += "; raised to your worth-it minimum"
+    return {"currency": cur, "min": _round(low, cur), "max": _round(high, cur),
+            "single": _round(max(floor, ((posted_lo + (posted_hi or posted_lo)) / 2) if posted_lo else market), cur),
+            "city": city, "basis": basis}
+
+
 # ---------------------------------------------------------------- output
 def fmt(n: float) -> str:
     return f"{n:,.0f}"

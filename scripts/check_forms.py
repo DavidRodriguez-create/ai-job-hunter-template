@@ -81,7 +81,9 @@ def check(job) -> tuple[str, dict]:
                     info.setdefault("confirmations", []).append(label)
                 elif re.search(r"salary|compensation|pay expectation", label, re.I):
                     key = f"{(job['country'] or '').lower().replace(' ', '_')}_expectation"
-                    if q["required"] and not ANS.get("salary", {}).get(key):
+                    sal = ANS.get("salary", {})
+                    info["salary_field"] = q["type"]  # input_text / textarea = text answer works
+                    if q["required"] and not (sal.get(key) or sal.get("expectation_text")):
                         info["missing"].append(f"your salary expectation for {job['country']}")
                         info.setdefault("save_as", {})["salary"] = f"[salary] {key}"
                 elif CONDITIONAL.search(label):

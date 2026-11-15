@@ -21,7 +21,8 @@ Works on **Windows, Mac and Linux**.
 | | |
 |---|---|
 | **Python 3.11 or newer** | [Download here](https://www.python.org/downloads/). Nothing else to install. <br>Windows: tick *"Add Python to PATH"* while installing. Mac: afterwards, double-click *Install Certificates.command* in *Applications › Python 3.x*. |
-| **Google Chrome** | Turns CVs into PDFs and is where application forms get filled. Edge, Chromium or Brave work too. |
+| **Google Chrome** | Turns CVs into PDFs (Edge, Chromium or Brave also work for that). |
+| **Claude in Chrome extension** | Only for applying: lets Claude fill forms in your Chrome. Needs a paid Claude plan. [Set it up in 4 steps](docs/apply.md#before-the-first-time-connect-claude-in-chrome). |
 | **Claude desktop app** | Recommended: sets everything up from your CV, writes tailored CVs and runs the daily search. Everything also works by hand without it. |
 
 ## Get the code

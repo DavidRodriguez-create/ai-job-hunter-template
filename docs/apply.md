@@ -2,9 +2,26 @@
 
 [← Back to README](../README.md)
 
-## Before the first time
+## Before the first time: connect Claude in Chrome
 
-Install the **Claude in Chrome** extension and sign in. Claude then works in *your* Chrome, where you're already logged in to your accounts.
+Claude fills application forms in **your own Google Chrome**, through the **Claude in Chrome** extension.
+You need it only for applying; finding jobs, CVs and the dashboard work without it.
+
+1. **Check your plan.** Claude in Chrome needs a paid Claude plan.
+2. **Install the extension.** In Google Chrome, open the
+   [Claude extension in the Chrome Web Store](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn)
+   (publisher: Anthropic) → **Add to Chrome**. Sign in with the **same Claude account** you use in the Claude app,
+   pin the extension, and allow the permissions it asks for.
+3. **Switch it on in the Claude desktop app.** Click your initials (bottom left) → **Settings** → **Customize** →
+   **Connectors** → **Claude in Chrome** → **Configure** → turn it on.
+4. **Check it.** Ask Claude: *"is Claude in Chrome connected?"* It should list your browser.
+
+Good to know:
+- Only **Google Chrome** works (not Edge, Brave or other Chromium browsers), and not on phones.
+- Chrome must be **open** when applications are sent (e.g. at 13:00 with [autopilot](autopilot.md)).
+- Claude uses the tabs it opens; it never needs your passwords. Logins and CAPTCHAs are left to you.
+
+Official guide: [Get started with Claude in Chrome](https://support.claude.com/en/articles/12012173-get-started-with-claude-in-chrome).
 
 ## The easy way: one batch a day
 

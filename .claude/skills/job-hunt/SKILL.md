@@ -81,6 +81,16 @@ Use **Claude in Chrome** (the user's own browser). The batch = jobs whose status
    save the answer in `profile/answers.toml` (`[salary] <country>_expectation`, `[identity] postal_code`),
    run `python scripts/check_forms.py --recheck`, then `--release` and `--prepare` again.
    "needs a login" jobs stay for the user to do by hand; list them.
+
+**Answering salary and postal-code fields** (from the packet's `answers`):
+- Salary, **text field** → `salary_expectation` (the user's own sentence, no number) unless a per-country fixed
+  answer exists (then that's what `salary_expectation` already contains).
+- Salary, **numbers only** → `salary_expectation_numbers`: two boxes = `min` and `max`; one box = `single`;
+  a dropdown of ranges = the option that contains `min`, else the closest one above it. Use the currency shown.
+  If `salary_expectation_numbers` is null (no city, e.g. remote-Europe) and the form needs a number, ask the user.
+- Show the numbers you'll use in the batch preview, with their `basis` (posted range / typical salary / worth-it minimum).
+- Postal code `JOB_CITY: …` → type a real, central postal code of the job's city (e.g. city-centre code); if the job
+  is remote or the city is unclear, ask.
 4. **Show the batch and ask once.** Numbered list: company, title, country, CV/letter files, the answers that
    will be used (visa, salary, notice…), drafted free-text answers (`output/<id>-*/answers.json`), and the
    confirmation checkboxes the forms require. Then ask: *reply "send all", "send 1-5", "send all except 3",
