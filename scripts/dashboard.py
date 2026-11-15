@@ -110,14 +110,40 @@ def stats(conn) -> dict:
     }
 
 
+# Sortable columns: name in the URL -> SQL expression (whitelist, never user text in SQL)
+SORT_COLS = {
+    "posted": "substr(posted_at, 1, 10)",  # by day, so a second sort can order jobs posted the same day
+    "score": "score", "salary": "COALESCE(salary_max, salary_min)",
+    "savings": "viability_eur_month", "company": "company", "title": "title",
+    "country": "country", "status": "status",
+}
+HIDDEN_BY_DEFAULT = ("closed", "skipped", "rejected")
+
+
+def order_by(sort: str | None) -> str:
+    """'posted:desc,savings:desc' -> SQL ORDER BY; unknown parts are ignored."""
+    parts = []
+    for item in (sort or "posted:desc").split(","):
+        col, _, direction = item.partition(":")
+        if col in SORT_COLS and col not in [p[0] for p in parts]:
+            parts.append((col, "ASC" if direction == "asc" else "DESC"))
+    parts = parts or [("posted", "DESC")]
+    return ", ".join(f"{SORT_COLS[c]} {d} NULLS LAST" for c, d in parts) + ", id DESC"
+
+
 def jobs(conn, q: dict) -> list[dict]:
     where, args = [], []
-    for key, col in (("status", "status"), ("country", "COALESCE(country,'Unknown')"), ("company", "company")):
+    for key, col in (("country", "COALESCE(country,'Unknown')"), ("company", "company")):
         if q.get(key):
             where.append(f"{col} = ?")
             args.append(q[key])
-    if not q.get("status"):
-        where.append("status != 'closed'")
+    status = q.get("status", "")
+    if status == "":  # default view: things still worth looking at
+        where.append(f"status NOT IN ({','.join('?' * len(HIDDEN_BY_DEFAULT))})")
+        args += HIDDEN_BY_DEFAULT
+    elif status != "all":
+        where.append("status = ?")
+        args.append(status)
     if q.get("q"):
         where.append("(title LIKE ? OR company LIKE ? OR description LIKE ?)")
         args += [f"%{q['q']}%"] * 3
@@ -125,12 +151,9 @@ def jobs(conn, q: dict) -> list[dict]:
         where.append("remote = 1")
     if q.get("salary") == "1":
         where.append("salary_min IS NOT NULL")
-    order = {"score": "score DESC NULLS LAST", "salary": "salary_max DESC NULLS LAST",
-             "viability": "viability_eur_month DESC NULLS LAST",
-             "company": "company, title"}.get(q.get("sort"), "posted_at DESC")
     sql = (f"SELECT id, company, title, country, location, remote, url, status, score, "
            f"salary_min, salary_max, currency, posted_at, viability_eur_month, cv_path FROM jobs "
-           f"{'WHERE ' + ' AND '.join(where) if where else ''} ORDER BY {order} LIMIT 300")
+           f"{'WHERE ' + ' AND '.join(where) if where else ''} ORDER BY {order_by(q.get('sort'))} LIMIT 300")
     return rows(conn, sql, args)
 
 

@@ -47,6 +47,12 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; t
 td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tablewrap { max-height: 640px; overflow: auto; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
+.sortbar { margin-top: -4px; }
+button.dir { min-width: 30px; padding: 5px 6px; }
+button:disabled { opacity: .4; cursor: default; }
+th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
+th[data-sort]:hover { color: var(--accent); }
+th[data-sort]::after { content: attr(data-mark); color: var(--accent); margin-left: 4px; font-size: 11px; }
 input, select, button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
   border-radius: 6px; padding: 5px 8px; }
 input[type=search] { min-width: 220px; }
@@ -96,23 +102,32 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
     <h2>Jobs</h2>
     <div class="filters">
       <input type="search" id="f-q" placeholder="Search title, company or description">
-      <select id="f-status"><option value="">Open (all but closed)</option></select>
-      <select id="f-country"><option value="">All countries</option></select>
-      <select id="f-company"><option value="">All companies</option></select>
+      <select id="f-status" title="Which job statuses to show">
+        <option value="" data-fixed>Active (hides skipped, rejected, closed)</option>
+        <option value="all" data-fixed>All jobs</option>
+      </select>
+      <select id="f-country"><option value="" data-fixed>All countries</option></select>
+      <select id="f-company"><option value="" data-fixed>All companies</option></select>
       <label><input type="checkbox" id="f-remote"> Remote</label>
       <label><input type="checkbox" id="f-salary"> Has salary</label>
-      <select id="f-sort">
-        <option value="">Newest</option><option value="score">Best score</option>
-        <option value="salary">Highest salary</option><option value="viability">Best savings (viability)</option>
-        <option value="company">Company</option>
-      </select>
       <button id="f-reset">Reset</button>
       <span class="sub" id="count"></span>
     </div>
+    <div class="filters sortbar">
+      <span class="sub">Sort by</span>
+      <select id="s1" aria-label="Sort by"></select>
+      <button id="s1d" class="dir" aria-label="Sort direction">↓</button>
+      <span class="sub">then by</span>
+      <select id="s2" aria-label="Then sort by"></select>
+      <button id="s2d" class="dir" aria-label="Second sort direction">↓</button>
+      <span class="sub hide-sm">Tip: click a column title to sort by it, Shift+click to sort by it second.</span>
+    </div>
     <div class="tablewrap"><table>
-      <thead><tr><th>Company</th><th>Title</th><th class="hide-sm">Location</th><th class="hide-sm">Score</th>
-        <th class="hide-sm">Salary</th><th class="hide-sm" title="Estimated monthly savings after tax, cost of living and your fixed costs. Only filled when you run the viability check.">Saves / month</th>
-        <th class="hide-sm">Posted</th><th>Status</th></tr></thead>
+      <thead><tr><th data-sort="company">Company</th><th data-sort="title">Title</th>
+        <th class="hide-sm" data-sort="country">Location</th><th class="hide-sm" data-sort="score">Score</th>
+        <th class="hide-sm" data-sort="salary">Salary</th>
+        <th class="hide-sm" data-sort="savings" title="Estimated monthly savings after tax, cost of living and your fixed costs. Only filled when you run the viability check.">Saves / month</th>
+        <th class="hide-sm" data-sort="posted">Posted</th><th data-sort="status">Status</th></tr></thead>
       <tbody id="rows"></tbody>
     </table></div>
   </section>
@@ -194,7 +209,7 @@ function kpis(k) {
 
 function fillSelect(id, values) {
   const s = $(id), keep = s.value;
-  s.replaceChildren(s.options[0]);
+  s.replaceChildren(...[...s.options].filter((o) => o.hasAttribute("data-fixed")));
   for (const v of values) s.append(el("option", { value: v, text: v }));
   s.value = keep;
 }
@@ -230,10 +245,51 @@ async function setStatus(id, status, sel) {
   loadStats();
 }
 
+// ---- sorting: two levels, set from the selects or by clicking column titles
+const SORTS = [["posted", "Date posted", "desc"], ["savings", "Savings / month", "desc"], ["score", "Score", "desc"],
+  ["salary", "Salary", "desc"], ["company", "Company", "asc"], ["title", "Title", "asc"],
+  ["country", "Location", "asc"], ["status", "Status", "asc"]];
+const DEFAULT_DIR = Object.fromEntries(SORTS.map(([k, , d]) => [k, d]));
+const DEFAULT_SORT = [["posted", "desc"], ["", "desc"]];
+let sortState = DEFAULT_SORT.map((s) => [...s]);
+
+function setupSort() {
+  $("s1").replaceChildren(...SORTS.map(([k, label]) => el("option", { value: k, text: label })));
+  $("s2").replaceChildren(el("option", { value: "", text: "(nothing)" }), ...SORTS.map(([k, label]) => el("option", { value: k, text: label })));
+  for (const [i, sel, btn] of [[0, "s1", "s1d"], [1, "s2", "s2d"]]) {
+    $(sel).addEventListener("change", (e) => { sortState[i] = [e.target.value, DEFAULT_DIR[e.target.value] || "desc"]; applySort(); });
+    $(btn).addEventListener("click", () => { sortState[i][1] = sortState[i][1] === "desc" ? "asc" : "desc"; applySort(); });
+  }
+  document.querySelectorAll("th[data-sort]").forEach((th) => {
+    th.addEventListener("click", (e) => {
+      const k = th.dataset.sort, i = e.shiftKey ? 1 : 0;
+      if (sortState[i][0] === k) sortState[i][1] = sortState[i][1] === "desc" ? "asc" : "desc";
+      else sortState[i] = [k, DEFAULT_DIR[k]];
+      if (sortState[0][0] === sortState[1][0]) sortState[1] = ["", "desc"];  // same column twice makes no sense
+      applySort();
+    });
+  });
+}
+
+function applySort() {
+  $("s1").value = sortState[0][0]; $("s2").value = sortState[1][0];
+  for (const [i, btn] of [[0, "s1d"], [1, "s2d"]]) {
+    $(btn).textContent = sortState[i][1] === "desc" ? "↓" : "↑";
+    $(btn).title = sortState[i][1] === "desc" ? "Highest / newest / Z first. Click to reverse" : "Lowest / oldest / A first. Click to reverse";
+    $(btn).disabled = !sortState[i][0];
+  }
+  document.querySelectorAll("th[data-sort]").forEach((th) => {
+    const i = sortState.findIndex(([k]) => k === th.dataset.sort);
+    th.dataset.mark = i < 0 ? "" : `${sortState[i][1] === "desc" ? "↓" : "↑"}${i + 1}`;
+  });
+  loadJobs();
+}
+
 async function loadJobs() {
   const p = new URLSearchParams();
-  for (const [k, id] of [["q", "f-q"], ["status", "f-status"], ["country", "f-country"], ["company", "f-company"], ["sort", "f-sort"]])
+  for (const [k, id] of [["q", "f-q"], ["status", "f-status"], ["country", "f-country"], ["company", "f-company"]])
     if ($(id).value) p.set(k, $(id).value);
+  p.set("sort", sortState.filter(([k]) => k).map(([k, d]) => `${k}:${d}`).join(","));
   if ($("f-remote").checked) p.set("remote", "1");
   if ($("f-salary").checked) p.set("salary", "1");
   const jobs = await (await fetch("/api/jobs?" + p)).json();
@@ -261,13 +317,15 @@ async function loadJobs() {
 
 let t;
 $("f-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(loadJobs, 250); });
-for (const id of ["f-status", "f-country", "f-company", "f-sort", "f-remote", "f-salary"]) $(id).addEventListener("change", loadJobs);
+for (const id of ["f-status", "f-country", "f-company", "f-remote", "f-salary"]) $(id).addEventListener("change", loadJobs);
 $("f-reset").addEventListener("click", () => {
-  for (const id of ["f-q", "f-status", "f-country", "f-company", "f-sort"]) $(id).value = "";
-  $("f-remote").checked = $("f-salary").checked = false; loadJobs();
+  for (const id of ["f-q", "f-status", "f-country", "f-company"]) $(id).value = "";
+  $("f-remote").checked = $("f-salary").checked = false;
+  sortState = DEFAULT_SORT.map((s) => [...s]); applySort();
 });
 
-loadStats().then(loadJobs).catch((e) => { $("lastrun").textContent = "Error: " + e; });
+setupSort();
+loadStats().then(applySort).catch((e) => { $("lastrun").textContent = "Error: " + e; });
 </script>
 </body>
 </html>
