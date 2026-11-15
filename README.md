@@ -82,6 +82,7 @@ Click any item for a short guide.
 | 💶 | [**Is it worth it? (optional)**](docs/worth-it.md) | Estimates how much you'd *save per month* in each city after taxes, rent and your fixed costs. Only when you ask. |
 | 📝 | [**Apply**](docs/apply.md) | Claude fills and submits the application forms in your Chrome, one batch a day, after your one-word OK. |
 | 🛫 | [**Autopilot**](docs/autopilot.md) | Set up once: every weekday it finds, filters, writes CVs and prepares applications; you reply "send all". |
+| ✉️ | [**Email notifications (optional)**](docs/email-notifications.md) | A daily email when applications are ready, sent from your own account by your computer's scheduler. |
 | ⏰ | [**Daily schedule**](docs/schedule.md) | The two daily runs (08:00 search, 13:00 applications) and how to run them by hand. |
 
 ## A normal week

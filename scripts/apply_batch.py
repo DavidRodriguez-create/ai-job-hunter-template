@@ -47,11 +47,8 @@ def applied_today(conn) -> int:
     return conn.execute("SELECT COUNT(*) FROM jobs WHERE status='applied' AND date(applied_at)=date('now')").fetchone()[0]
 
 
-def prepare(conn) -> int:
-    held = lock_info()
-    if held:
-        print(f"An application run is already in progress (started {held['started']}). Nothing to do.")
-        return 3
+def classify(conn) -> dict:
+    """Today's batch, sorted into ready / needs_you / needs_cv / over_cap. No side effects (no files, no lock)."""
     left = max(0, MAX_PER_DAY - applied_today(conn))
     marks = ",".join("?" * len(INCLUDE))
     rows = conn.execute(f"""SELECT * FROM jobs WHERE status IN ({marks})
@@ -74,6 +71,16 @@ def prepare(conn) -> int:
             ready.append(p)
         else:
             over_cap.append(p)
+    return {"ready": ready, "needs_you": needs_you, "needs_cv": needs_cv, "over_cap": over_cap, "left": left}
+
+
+def prepare(conn) -> int:
+    held = lock_info()
+    if held:
+        print(f"An application run is already in progress (started {held['started']}). Nothing to do.")
+        return 3
+    b = classify(conn)
+    ready, needs_you, needs_cv, over_cap, left = b["ready"], b["needs_you"], b["needs_cv"], b["over_cap"], b["left"]
     if not ready and not needs_you and not needs_cv:
         print(f"Nothing to apply to today (looking at: {', '.join(INCLUDE)}).")
         return 0

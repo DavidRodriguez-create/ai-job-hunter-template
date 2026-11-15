@@ -60,3 +60,12 @@ worth_it_filter = false                # true = only queue jobs that are worth i
 apply_include = ["approved", "queued"] # which jobs go into the daily application batch
 max_applications_per_day = 20          # safety cap per day
 apply_time = "13:00"                   # when the batch is prepared (weekdays); informational, set in the schedule
+
+[notify]
+# OPTIONAL email summary, sent by your computer's scheduler (not by Claude). Setup: docs/email-notifications.md
+email_enabled = false                  # true after you've stored the password and sent a --test email
+email_to = []                         # where the summary goes
+smtp_user = ""                         # the account that sends it (Gmail: your address)
+smtp_host = "smtp.gmail.com"
+smtp_port = 465                        # 465 = SSL, 587 = STARTTLS
+password_file = "~/.jobhunt/smtp_password"   # or set JOBHUNT_SMTP_PASSWORD; NEVER put the password in this file

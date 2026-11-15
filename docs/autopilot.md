@@ -13,6 +13,9 @@ Set it up once. Then, every weekday, the tool does the work, and your part is **
 | **13:00** | Today's batch is prepared and you get a notification: *"Applications ready: 9 to send"*. | Open it, read the list, and reply **"send all"** (or *"send 1-5"*, *"send all except 3"*, *"not today"*). |
 | **Right after** | Claude fills and submits each application in your Chrome, then tells you what was sent, what failed and why. | Nothing. |
 
+**Notifications** arrive through the Claude app (computer, and phone with the Claude mobile app).
+Want an **email** too? See [email notifications](email-notifications.md) (optional, 10-minute setup).
+
 **Want to send earlier?** In the Claude app, go to **Scheduled** → **Daily applications** → **Run now**. That's your "Send" button.
 Or just tell Claude *"send my applications"*.
 

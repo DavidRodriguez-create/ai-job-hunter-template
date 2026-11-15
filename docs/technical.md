@@ -28,6 +28,7 @@ scripts/
   daily.py               fetch + score + queue + forms     --queue N · --viability   (defaults from [autopilot])
   check_forms.py         form check per queued/approved    --recheck   (Greenhouse questions via public API)
   apply_packet.py        form answers for one job          <id> · --approved
+  notify_email.py        optional daily email (OS scheduler) --dry-run · --test · --always   (password: env var or ~/.jobhunt file)
   apply_batch.py         daily application batch + lock    --prepare · --done <id> · --failed <id> "why" · --release · --status
 .claude/skills/job-hunt-setup/SKILL.md   Claude: first-time setup from the user's CV / LinkedIn PDF
 .claude/skills/job-hunt/SKILL.md         Claude: daily run, tailoring, viability, applying
