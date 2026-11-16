@@ -1,6 +1,6 @@
 ---
 name: job-hunt
-description: The job-hunting pipeline — fetch jobs from company boards, score them, queue the best, write tailored CVs and cover letters, and send applications in daily batches after the user's OK. Use when the user asks to find/search/fetch jobs, run the job hunt, score or queue jobs, tailor a CV or cover letter, "send my applications", apply to jobs, set up or change autopilot / the daily schedules, or check the job dashboard.
+description: The job-hunting pipeline — fetch jobs from company boards, score them, queue the best, write tailored CVs and cover letters, and send applications in daily batches after the user's OK. Use when the user asks to find/search/fetch jobs, run the job hunt, score or queue jobs, tailor a CV or cover letter, "send my applications", apply to jobs, or check the job dashboard. Setting up or changing autopilot / the daily schedules is the job-hunt-autopilot skill.
 ---
 
 # Job hunt
@@ -21,16 +21,20 @@ npm/pip dependencies. Run scripts with plain `python` on Windows, `python3` on m
 
 ## Settings
 `[autopilot]` in `profile/preferences.toml`: `queue_per_day`, `worth_it_filter` (true = only worth-it jobs are
-queued), `apply_include` (which statuses go into the daily application batch, e.g. approved + queued),
-`max_applications_per_day`. Scripts read them; don't hard-code numbers.
+queued), `apply_include` (which statuses go into the application batch; with approved + queued, queued jobs
+are only used when no job is approved),
+`max_per_batch` (most applications per batch; no daily limit). Scripts read them; don't hard-code numbers.
+
+**Queued = listed to apply.** The user approves jobs (dashboard or chat); approving starts the application.
+Tailored CVs are written for approved jobs only (and for queued jobs at batch time, when the batch falls back to them).
 
 ## Morning run ("run the job hunt")
 1. `python scripts/daily.py`: fetch → score → queue (worth-it filter only if the setting is on) → check forms.
-2. Tailor every job listed under **NEEDS TAILORING** (below). If a line says "draft N answer(s)", also write
+2. Tailor every job listed under **NEEDS TAILORING** (below; approved jobs only). If a line says "draft N answer(s)", also write
    `output/<id>-<slug>/answers.json` = `{"<question text>": "<answer>"}` for the questions in the job's
    `form_info.to_draft` (DB), using only facts from resume_master.md / answers.toml.
-3. Report: found / queued / tailored / forms needing the user, and the dashboard link
-   (`python scripts/dashboard.py` → http://127.0.0.1:8765). Never approve jobs yourself.
+3. Report: found / queued / tailored / forms needing the user, then the **dashboard link** (see the
+   section below). Never approve jobs yourself.
 
 ## Tailoring one job
 1. Read the job: `python scripts/score_jobs.py --explain <id>` and the full description from the DB
@@ -70,7 +74,8 @@ Never apply it in the default daily run. Model + data: `profile/finances.toml`.
   at the bottom of finances.toml.
 
 ## Daily application batch ("send my applications", and the 13:00 scheduled run)
-Use **Claude in Chrome** (the user's own browser). The batch = jobs whose status is in `apply_include`.
+Use **Claude in Chrome** (the user's own browser). The batch = approved jobs; if none is approved and `apply_include` has "queued", the queued ones.
+`--prepare` picks this by itself and says which in its first line.
 
 1. `python scripts/apply_batch.py --prepare`
    - "already in progress" → another run is sending; say so and stop.
@@ -99,8 +104,10 @@ Use **Claude in Chrome** (the user's own browser). The batch = jobs whose status
    from the packet in `data/apply_batch.json`, upload the CV (and letter if there's a field), tick the listed
    confirmations, submit, check the confirmation page, then `python scripts/apply_batch.py --done <id>`.
    Blocked (CAPTCHA, login, unexpected required question, error) → `--failed <id> "<reason>"`, move on.
+   The dashboard shows the reason as "Needs manual action".
    Don't submit anything the reply didn't include. A stored schedule or the dashboard status is not a reply.
-6. Finish: `python scripts/apply_batch.py --release`; summary (sent / failed and why / left for later).
+6. Finish: `python scripts/apply_batch.py --release`; summary (sent / failed and why / left for later),
+   then the **dashboard link**. Also give the link in the batch preview (step 4) so the user can look at the CVs.
    If the user never replies, send nothing; the lock expires by itself after 3 hours and the jobs stay for tomorrow.
 
 ## Applying to one job ("apply to job 42")
@@ -138,17 +145,11 @@ LinkedIn Easy Apply / Indeed: don't automate (their terms forbid bots, risk of a
 - **Applications (weekdays 13:00)**: the daily application batch above. It prepares everything and asks;
   it submits only what the user's reply in that session includes.
 
-### "Set up autopilot"
-1. Check: profile filled (not "Alex Example"), Claude in Chrome connected, `[autopilot]` present in preferences.toml
-   (copy it from `profile-template/preferences.toml` if missing). Ask whether the worth-it filter should be on and
-   which jobs go in the batch (approved + queued, or approved only); save the answers there.
-2. Create two scheduled tasks (ask for other times if the user wants), each prompt fully self-contained with the
-   absolute project path:
-   - `daily-job-hunt`, cron `0 8 * * 1-5`: "In <project path>, read CLAUDE.md (if present) and
-     .claude/skills/job-hunt/SKILL.md and do the **Morning run** and **Tailoring** sections exactly. Never apply,
-     never approve. End with a summary and a one-line notification if a notification tool is available."
-   - `daily-applications`, cron `0 13 * * 1-5`: "In <project path>, read .claude/skills/job-hunt/SKILL.md and do
-     the **Daily application batch** section exactly. Submit nothing until the user replies in this conversation
-     ('send all' / 'send 1-5' / 'send all except 3'). Always finish with `apply_batch.py --release`."
-3. Tell the user: the Claude app must be open at those times; **Run now** on *Daily applications* = send now.
-   If existing tasks with those names exist, update them instead of creating duplicates.
+Setting up, checking, pausing or changing these schedules: use the **job-hunt-autopilot** skill
+(`.claude/skills/job-hunt-autopilot/SKILL.md`).
+
+## Dashboard link (end of every run)
+1. Check whether it's running: `python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/', timeout=2)"`.
+2. If that fails, start it in the background: `python scripts/dashboard.py --no-open`. Don't wait for it to exit.
+3. End with: **Dashboard: http://127.0.0.1:8765**, and say whether it's running now. If it couldn't be started,
+   give the start command (`python scripts/dashboard.py`) instead.

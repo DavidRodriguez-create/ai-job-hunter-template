@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tomllib
 import webbrowser
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -30,8 +31,6 @@ ROOT = Path(__file__).resolve().parent.parent
 PAGE = Path(__file__).resolve().parent / "dashboard.html"
 PREFS = tomllib.loads((ROOT / "profile" / "preferences.toml").read_text(encoding="utf-8"))
 TOKEN = secrets.token_urlsafe(24)
-SEARCH_PROC: subprocess.Popen | None = None  # the search started from the 'Start search' button, if any
-SEARCH_LOG = ROOT / "data" / "search.log"
 FUNNEL = ["new", "scored", "queued", "approved", "applied", "interview", "offer"]
 CLOSED = ["rejected", "skipped", "closed"]
 
@@ -134,11 +133,7 @@ def order_by(sort: str | None) -> str:
     return ", ".join(f"{SORT_COLS[c]} {d} NULLS LAST" for c, d in parts) + ", id DESC"
 
 
-PAGE_SIZES = (25, 50, 100)
-
-
 def jobs(conn, q: dict) -> dict:
-    """One page of the jobs table: {"jobs": [...], "total": n, "page": p, "per": size}."""
     where, args = [], []
     for key, col in (("country", "COALESCE(country,'Unknown')"), ("company", "company")):
         if q.get(key):
@@ -158,42 +153,77 @@ def jobs(conn, q: dict) -> dict:
         where.append("remote = 1")
     if q.get("salary") == "1":
         where.append("salary_min IS NOT NULL")
-    cond = f"WHERE {' AND '.join(where)}" if where else ""
-    total = conn.execute(f"SELECT COUNT(*) FROM jobs {cond}", args).fetchone()[0]
-    per = int(q["per"]) if q.get("per", "").isdigit() and int(q["per"]) in PAGE_SIZES else PAGE_SIZES[0]
-    pages = max(1, -(-total // per))
-    page = min(max(1, int(q["page"]) if q.get("page", "").isdigit() else 1), pages)
+    where_sql = f"WHERE {' AND '.join(where)}" if where else ""
+    total = conn.execute(f"SELECT COUNT(*) FROM jobs {where_sql}", args).fetchone()[0]
+    # One page at a time: ?page=1&per=50 (per is 10..200)
+    try:
+        per = min(max(int(q.get("per", 50)), 10), 200)
+        page = max(int(q.get("page", 1)), 1)
+    except ValueError:
+        per, page = 50, 1
+    pages = max((total + per - 1) // per, 1)
+    page = min(page, pages)
     sql = (f"SELECT id, company, title, country, location, remote, url, status, score, "
            f"salary_min, salary_max, currency, posted_at, viability_eur_month, cv_path FROM jobs "
-           f"{cond} ORDER BY {order_by(q.get('sort'))} LIMIT ? OFFSET ?")
-    return {"jobs": rows(conn, sql, [*args, per, (page - 1) * per]), "total": total, "page": page, "per": per}
+           f"{where_sql} ORDER BY {order_by(q.get('sort'))} LIMIT ? OFFSET ?")
+    return {"total": total, "page": page, "pages": pages, "per": per,
+            "rows": rows(conn, sql, [*args, per, (page - 1) * per])}
 
 
-def search_status(conn) -> dict:
-    """Has the job search (fetch) run today, and is one running right now from the button?"""
-    last = conn.execute("""SELECT MAX(datetime(finished_at, 'localtime')) FROM runs
-                           WHERE date(finished_at, 'localtime') = date('now', 'localtime')""").fetchone()[0]
-    return {"ran_today": bool(last), "last": last, "running": search_running()}
+def job_state(r, problems: list[str], sending: set[int]) -> tuple[str, str]:
+    """(state, detail) of a job in the Today list.
+    listed = queued, waiting for the user's Approve. Approving starts the application:
+    preparing (CV being written) -> ready (waits for the next batch) -> sending -> applied (leaves the list).
+    manual = something only the user can fix (login, missing answer, or the last attempt failed)."""
+    import apply_batch
+    if r["status"] == "queued":
+        return "listed", ""
+    if r["id"] in sending:
+        return "sending", "sending now"
+    failed = apply_batch.last_failure(r["notes"]) if r["apply_attempts"] else None
+    if problems or failed:
+        return "manual", " · ".join(problems + ([f"last try failed: {failed}"] if failed else []))
+    if not r["cv_path"]:
+        return "preparing", "writing the tailored CV"
+    return "ready", "waiting for the next batch"
 
 
-def search_running() -> bool:
-    return SEARCH_PROC is not None and SEARCH_PROC.poll() is None
+# The "Find new jobs" button runs scripts/daily.py in the background. Its output goes to data/search.log.
+SEARCH: dict = {"proc": None, "started": None}
+SEARCH_LOG = ROOT / "data" / "search.log"
 
 
-def start_search(conn) -> tuple[int, dict]:
-    """Start the mechanical daily run (fetch -> score -> queue -> check forms) in the background.
-    Refused when one is already running or the search already ran today."""
-    global SEARCH_PROC
-    status = search_status(conn)
-    if status["running"]:
-        return 409, {"error": "The search is already running.", **status}
-    if status["ran_today"]:
-        return 409, {"error": "The search already ran today.", **status}
-    SEARCH_LOG.parent.mkdir(parents=True, exist_ok=True)
-    with SEARCH_LOG.open("w", encoding="utf-8") as log:
-        SEARCH_PROC = subprocess.Popen([sys.executable, str(ROOT / "scripts" / "daily.py")], cwd=ROOT,
-                                       stdout=log, stderr=subprocess.STDOUT)
-    return 200, {"ok": True, **search_status(conn)}
+def search_status() -> dict:
+    import daily
+    proc = SEARCH["proc"]
+    if proc is not None and proc.poll() is None:
+        return {"running": True, "started": SEARCH["started"]}
+    held = daily.lock_info()  # a search started elsewhere, e.g. the 08:00 run
+    if held:
+        return {"running": True, "started": held["started"]}
+    if proc is None:
+        return {"running": False}
+    tail = []
+    try:
+        tail = [l for l in SEARCH_LOG.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()][-3:]
+    except OSError:
+        pass
+    return {"running": False, "started": SEARCH["started"], "ok": proc.returncode == 0,
+            "message": "" if proc.returncode == 0 else " / ".join(tail)}
+
+
+def start_search() -> dict:
+    import daily
+    if search_status()["running"]:
+        return {"ok": False, "error": "A search is already running."}
+    SEARCH_LOG.parent.mkdir(exist_ok=True)
+    log = SEARCH_LOG.open("w", encoding="utf-8")
+    SEARCH["proc"] = subprocess.Popen([sys.executable, str(Path(daily.__file__))], cwd=ROOT, stdout=log,
+                                      stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                      creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    log.close()  # the child has its own handle
+    SEARCH["started"] = datetime.now().isoformat(timespec="seconds")
+    return {"ok": True}
 
 
 def today(conn) -> dict:
@@ -201,26 +231,29 @@ def today(conn) -> dict:
     import apply_batch  # reads the lock and the [autopilot] settings
     prefs = tomllib.loads((ROOT / "profile" / "preferences.toml").read_text(encoding="utf-8"))
     auto = prefs.get("autopilot", {})
+    sending = set(apply_batch.sending_ids())
+    include = apply_batch.include_now(conn)
     waiting = []
     for r in conn.execute("""SELECT id, company, title, country, url, status, score, viability_eur_month,
-                                    form_status, form_info, cv_path, cover_letter_path, notes
+                                    form_status, form_info, cv_path, cover_letter_path, notes, apply_attempts
                              FROM jobs WHERE status IN ('queued','approved')
                              ORDER BY status='approved' DESC, score DESC"""):
         info = json.loads(r["form_info"] or "{}")
         problems = list(info.get("missing", []))
         if r["form_status"] == "needs_you":
             problems.insert(0, info.get("reason", "needs a login"))
+        state, detail = job_state(r, problems, sending)
         waiting.append({k: r[k] for k in ("id", "company", "title", "country", "url", "status", "score",
                                           "viability_eur_month", "form_status")}
                        | {"problems": problems, "has_cv": bool(r["cv_path"]), "has_letter": bool(r["cover_letter_path"]),
-                          "in_batch": r["status"] in apply_batch.INCLUDE})
+                          "in_batch": r["status"] in include, "state": state, "detail": detail})
     held = apply_batch.lock_info()
     return {
         "autopilot": {"queue_per_day": auto.get("queue_per_day", 15), "worth_it_filter": bool(auto.get("worth_it_filter")),
-                      "apply_include": apply_batch.INCLUDE, "max_per_day": apply_batch.MAX_PER_DAY,
+                      "apply_include": apply_batch.INCLUDE, "include_now": include, "max_per_batch": apply_batch.MAX_PER_BATCH,
                       "apply_time": auto.get("apply_time", "13:00")},
         "running_since": held["started"] if held else None,
-        "search": search_status(conn),
+        "search": search_status(),
         "applied_today": apply_batch.applied_today(conn),
         "waiting": waiting,
         "recent_applied": rows(conn, """SELECT id, company, title, country, applied_at FROM jobs
@@ -295,11 +328,9 @@ class Handler(BaseHTTPRequestHandler):
         if not self._host_ok() or not secrets.compare_digest(self.headers.get("X-Token", ""), TOKEN):
             return self._send(403, b"forbidden", "text/plain")
         path = urlparse(self.path).path
-        if path == "/api/search/start":
-            with db.connect() as conn:
-                db.init(conn)
-                code, body = start_search(conn)
-            return self._json(body, code)
+        if path == "/api/search":
+            res = start_search()
+            return self._json(res, 200 if res["ok"] else 409)
         m = re.fullmatch(r"/api/jobs/(\d+)/status", path)
         if not m and path != "/api/jobs/bulk-status":
             return self._send(404, b"not found", "text/plain")

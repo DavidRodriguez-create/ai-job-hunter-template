@@ -11,7 +11,7 @@ Two schedules run on weekdays. Together they're the [autopilot](autopilot.md).
 
 ## Set them up
 
-In the Claude desktop app, ask: *"set up autopilot"* (or *"schedule the daily job hunt every weekday at 8am"*).
+In the Claude desktop app, type **`/job-hunt-autopilot`** or ask *"set up autopilot"* (or *"schedule the daily job hunt every weekday at 8am"*).
 You'll find them under **Scheduled** in the sidebar, where you can pause them, run them now, or change the time.
 
 > The Claude app has to be open at that time. If it isn't, the run happens the next time you open it.

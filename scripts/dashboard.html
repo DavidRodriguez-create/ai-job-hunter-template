@@ -45,10 +45,11 @@ table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--panel); }
 td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tablewrap { overflow-x: auto; }
-.pager { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px; }
+.tablewrap { max-height: 640px; overflow: auto; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
-.sortbar { margin-top: -4px; }
+.sortinfo { margin: -4px 0 8px; }
+.sortinfo #sortinfo { color: var(--ink); }
+.pager { justify-content: center; margin: 12px 0 0; }
 button.dir { min-width: 30px; padding: 5px 6px; }
 button:disabled { opacity: .4; cursor: default; }
 th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
@@ -67,7 +68,24 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
 .chip { border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; font-size: 13px; background: var(--bg); }
 .chip b { font-variant-numeric: tabular-nums; }
 .chip.good { border-color: var(--good); color: var(--good); } .chip.warn { border-color: var(--warn); color: var(--warn); }
-.tlist { display: grid; gap: 8px; overflow-y: auto; overscroll-behavior: contain; }  /* height set in JS: 3½ rows */
+.tlist { display: grid; gap: 8px; max-height: min(460px, 60vh); overflow-y: auto; padding-right: 4px; }
+.actions { margin: 12px 0 0; }
+.push-right { margin-left: auto; }
+.btn-main { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+.btn-main:hover { filter: brightness(1.08); }
+.helpbox { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 13px; background: var(--bg); }
+.helpbox .callout { color: var(--warn);border-left: 3px solid var(--warn); padding: 2px 0 2px 8px; margin-bottom: 6px; }
+.helpbox ul { margin: 6px 0; padding-left: 20px; }
+.helpbox code { background: var(--accent-soft); color: var(--ink); padding: 1px 6px; border-radius: 4px; }
+.helpbox button { padding: 1px 8px; font-size: 12px; }
+.state { display: inline-block; font-size: 12.5px; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line); white-space: nowrap; }
+.state.preparing, .state.sending { color: var(--accent); border-color: var(--accent); }
+.state.ready { color: var(--good); border-color: var(--good); }
+.state.manual { color: var(--warn); border-color: var(--warn); }
+.linkbtn { border: 0; background: none; color: var(--muted); font-size: 12px; padding: 3px 4px; text-decoration: underline; }
+.linkbtn:hover { color: var(--accent); }
+.acts { flex-direction: column; align-items: flex-end !important; }
+.acts .row { display: flex; gap: 6px; align-items: center; }
 .trow { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 10px 12px; border: 1px solid var(--line);
   border-radius: 8px; background: var(--bg); }
 .trow .t { font-weight: 600; } .trow .meta { color: var(--muted); font-size: 12.5px; }
@@ -100,15 +118,24 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
       <h2 style="margin:0">Today</h2>
       <span class="sub" id="autopilot"></span>
     </div>
+    <div class="filters actions">
+      <button id="search-btn" class="btn-main" title="Fetch new postings, score them and list the best ones below">Find new jobs</button>
+      <button id="apply-btn" title="Send the approved jobs that are ready, now instead of at the next batch">Apply now</button>
+      <span class="sub" id="search-status"></span>
+      <!-- on the right, above the per-job Approve buttons, so it isn't mistaken for a main button -->
+      <button id="approve-ready" class="push-right" title="Approve every listed job with nothing missing">Approve all listed</button>
+    </div>
+    <div class="helpbox" id="apply-help" hidden>
+      <div class="callout">⚠ Applications are sent by Claude in your Chrome, <b>so this page can't start them on its own</b>.</div>
+      If you want to start the applying process, you can either:
+      <ul>
+        <li>In the Claude app, open <b>Scheduled</b> → <b>Daily applications</b> → <b>Run now</b>, or</li>
+        <li>Paste this in a Claude chat in this project:
+          <code id="apply-cmd">send my applications</code> <button id="copy-cmd">Copy</button></li>
+      </ul>
+      Claude shows you the list first. Nothing is sent before you reply "send all".
+    </div>
     <div class="chips" id="today-chips"></div>
-    <div class="filters" style="margin-bottom:10px">
-      <button id="approve-ready">Approve all ready</button>
-      <span class="sub">Approved jobs go first in the next application batch.</span>
-    </div>
-    <div class="filters" style="margin-bottom:10px">
-      <button id="start-search" hidden>Start search now</button>
-      <span class="sub" id="search-msg"></span>
-    </div>
     <div class="tlist" id="today-list"></div>
     <div class="hint" id="today-hint"></div>
   </section>
@@ -152,15 +179,10 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
       <button id="f-reset">Reset</button>
       <span class="sub" id="count"></span>
     </div>
-    <div class="filters sortbar">
-      <span class="sub">Sort by</span>
-      <select id="s1" aria-label="Sort by"></select>
-      <button id="s1d" class="dir" aria-label="Sort direction">↓</button>
-      <span class="sub">then by</span>
-      <select id="s2" aria-label="Then sort by"></select>
-      <button id="s2d" class="dir" aria-label="Second sort direction">↓</button>
-      <span class="sub hide-sm">Tip: click a column title to sort by it, Shift+click to sort by it second.</span>
-    </div>
+    <div class="sub sortinfo"><span id="sortinfo"></span>
+      <button class="linkbtn" id="sort-reset">reset sorting</button>
+      <span class="hide-sm">· Click a column title to sort by it, then more titles to sort by them next (up to 3).
+        Click again to reverse, a third time to remove.</span></div>
     <div class="tablewrap"><table>
       <thead><tr><th data-sort="company">Company</th><th data-sort="title">Title</th>
         <th class="hide-sm" data-sort="country">Location</th><th class="hide-sm" data-sort="score">Score</th>
@@ -169,12 +191,15 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
         <th class="hide-sm" data-sort="posted">Posted</th><th data-sort="status">Status</th></tr></thead>
       <tbody id="rows"></tbody>
     </table></div>
-    <div class="pager">
+    <div class="filters pager" id="pager">
+      <button id="pg-first" aria-label="First page" title="First page">«</button>
       <button id="pg-prev">‹ Previous</button>
       <span class="sub" id="pg-info"></span>
       <button id="pg-next">Next ›</button>
+      <button id="pg-last" aria-label="Last page" title="Last page">»</button>
       <select id="pg-per" aria-label="Jobs per page">
-        <option value="25">25 per page</option><option value="50">50 per page</option><option value="100">100 per page</option>
+        <option value="25">25 per page</option><option value="50" selected>50 per page</option>
+        <option value="100">100 per page</option><option value="200">200 per page</option>
       </select>
     </div>
   </section>
@@ -292,63 +317,74 @@ async function setStatus(id, status, sel) {
   loadStats(); loadToday();
 }
 
-// ---- sorting: two levels, set from the selects or by clicking column titles
-const SORTS = [["posted", "Date posted", "desc"], ["savings", "Savings / month", "desc"], ["score", "Score", "desc"],
+// ---- sorting: click column titles. Each new title is added as the next level (up to 3).
+// Clicking a sorted title cycles: its first direction -> reversed -> removed.
+const SORTS = [["posted", "Date posted", "desc"], ["savings", "Saves / month", "desc"], ["score", "Score", "desc"],
   ["salary", "Salary", "desc"], ["company", "Company", "asc"], ["title", "Title", "asc"],
   ["country", "Location", "asc"], ["status", "Status", "asc"]];
 const DEFAULT_DIR = Object.fromEntries(SORTS.map(([k, , d]) => [k, d]));
-const DEFAULT_SORT = [["posted", "desc"], ["", "desc"]];
+const LABEL = Object.fromEntries(SORTS.map(([k, l]) => [k, l]));
+const MAX_SORTS = 3;
+const DEFAULT_SORT = [["posted", "desc"]];
 let sortState = DEFAULT_SORT.map((s) => [...s]);
 
 function setupSort() {
-  $("s1").replaceChildren(...SORTS.map(([k, label]) => el("option", { value: k, text: label })));
-  $("s2").replaceChildren(el("option", { value: "", text: "(nothing)" }), ...SORTS.map(([k, label]) => el("option", { value: k, text: label })));
-  for (const [i, sel, btn] of [[0, "s1", "s1d"], [1, "s2", "s2d"]]) {
-    $(sel).addEventListener("change", (e) => { sortState[i] = [e.target.value, DEFAULT_DIR[e.target.value] || "desc"]; applySort(); });
-    $(btn).addEventListener("click", () => { sortState[i][1] = sortState[i][1] === "desc" ? "asc" : "desc"; applySort(); });
-  }
   document.querySelectorAll("th[data-sort]").forEach((th) => {
-    th.addEventListener("click", (e) => {
-      const k = th.dataset.sort, i = e.shiftKey ? 1 : 0;
-      if (sortState[i][0] === k) sortState[i][1] = sortState[i][1] === "desc" ? "asc" : "desc";
-      else sortState[i] = [k, DEFAULT_DIR[k]];
-      if (sortState[0][0] === sortState[1][0]) sortState[1] = ["", "desc"];  // same column twice makes no sense
+    th.title = "Click to sort by this column (click again to reverse, a third time to remove)";
+    th.addEventListener("click", () => {
+      const k = th.dataset.sort, i = sortState.findIndex(([c]) => c === k);
+      if (i < 0) {
+        if (sortState.length >= MAX_SORTS) sortState.pop();  // full: the new column replaces the last level
+        sortState.push([k, DEFAULT_DIR[k]]);
+      } else if (sortState[i][1] === DEFAULT_DIR[k]) {
+        sortState[i][1] = DEFAULT_DIR[k] === "desc" ? "asc" : "desc";
+      } else {
+        sortState.splice(i, 1);
+      }
       applySort();
     });
   });
+  $("sort-reset").addEventListener("click", () => { sortState = DEFAULT_SORT.map((s) => [...s]); applySort(); });
 }
 
 function applySort() {
-  $("s1").value = sortState[0][0]; $("s2").value = sortState[1][0];
-  for (const [i, btn] of [[0, "s1d"], [1, "s2d"]]) {
-    $(btn).textContent = sortState[i][1] === "desc" ? "↓" : "↑";
-    $(btn).title = sortState[i][1] === "desc" ? "Highest / newest / Z first. Click to reverse" : "Lowest / oldest / A first. Click to reverse";
-    $(btn).disabled = !sortState[i][0];
-  }
   document.querySelectorAll("th[data-sort]").forEach((th) => {
     const i = sortState.findIndex(([k]) => k === th.dataset.sort);
-    th.dataset.mark = i < 0 ? "" : `${sortState[i][1] === "desc" ? "↓" : "↑"}${i + 1}`;
+    th.dataset.mark = i < 0 ? "" : `${sortState[i][1] === "desc" ? "↓" : "↑"}${sortState.length > 1 ? i + 1 : ""}`;
   });
+  const arrow = (d) => (d === "desc" ? "↓" : "↑");
+  $("sortinfo").textContent = sortState.length
+    ? "Sorted by " + sortState.map(([k, d]) => `${LABEL[k]} ${arrow(d)}`).join(", then ")
+    : "Sorted by Date posted ↓ (default)";
   loadJobs();
 }
 
-let PAGE = 1, PAGES = 1;
-// page: which page to show. Filter and sort changes call loadJobs() with no page, so they start again at page 1.
-async function loadJobs(page = 1) {
+// Pages: filters and sorting go back to page 1; the status dropdown and Today buttons keep the current page.
+let PAGE = 1;
+function gotoPage(n) { PAGE = n; loadJobs({ keepPage: true }); $("rows").closest("section").scrollIntoView({ block: "start" }); }
+
+async function loadJobs({ keepPage = false } = {}) {
+  if (!keepPage) PAGE = 1;
   const p = new URLSearchParams();
   for (const [k, id] of [["q", "f-q"], ["status", "f-status"], ["country", "f-country"], ["company", "f-company"]])
     if ($(id).value) p.set(k, $(id).value);
   p.set("sort", sortState.filter(([k]) => k).map(([k, d]) => `${k}:${d}`).join(","));
   if ($("f-remote").checked) p.set("remote", "1");
   if ($("f-salary").checked) p.set("salary", "1");
-  p.set("page", page); p.set("per", $("pg-per").value);
+  p.set("page", PAGE); p.set("per", $("pg-per").value);
   const res = await (await fetch("/api/jobs?" + p)).json();
-  const jobs = res.jobs;
-  PAGE = res.page; PAGES = Math.max(1, Math.ceil(res.total / res.per));
-  const first = res.total ? (PAGE - 1) * res.per + 1 : 0;
+  const jobs = res.rows;
+  PAGE = res.page;
+  const from = res.total ? (res.page - 1) * res.per + 1 : 0, to = (res.page - 1) * res.per + jobs.length;
   $("count").textContent = `${fmt(res.total)} jobs`;
-  $("pg-info").textContent = `Page ${PAGE} of ${PAGES} · ${fmt(first)}–${fmt(first ? first + jobs.length - 1 : 0)} of ${fmt(res.total)}`;
-  $("pg-prev").disabled = PAGE <= 1; $("pg-next").disabled = PAGE >= PAGES;
+  $("pg-info").textContent = res.total ? `${fmt(from)}–${fmt(to)} of ${fmt(res.total)} · page ${res.page} of ${res.pages}` : "";
+  $("pg-first").disabled = $("pg-prev").disabled = res.page <= 1;
+  $("pg-next").disabled = $("pg-last").disabled = res.page >= res.pages;
+  $("pg-first").onclick = () => gotoPage(1);
+  $("pg-prev").onclick = () => gotoPage(res.page - 1);
+  $("pg-next").onclick = () => gotoPage(res.page + 1);
+  $("pg-last").onclick = () => gotoPage(res.pages);
+  $("pager").hidden = res.pages <= 1;
   const tb = $("rows"); tb.replaceChildren();
   if (!jobs.length) { tb.append(el("tr", {}, el("td", { colspan: 8, class: "empty", text: "No jobs match" }))); return; }
   for (const j of jobs) {
@@ -371,11 +407,8 @@ async function loadJobs(page = 1) {
 }
 
 let t;
-$("f-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => loadJobs(), 250); });
-for (const id of ["f-status", "f-country", "f-company", "f-remote", "f-salary", "pg-per"]) $(id).addEventListener("change", () => loadJobs());
-const goPage = async (n) => { await loadJobs(n); $("rows").closest("section").scrollIntoView({ behavior: "smooth" }); };
-$("pg-prev").addEventListener("click", () => goPage(PAGE - 1));
-$("pg-next").addEventListener("click", () => goPage(PAGE + 1));
+$("f-q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(loadJobs, 250); });
+for (const id of ["f-status", "f-country", "f-company", "f-remote", "f-salary"]) $(id).addEventListener("change", loadJobs);
 $("f-reset").addEventListener("click", () => {
   for (const id of ["f-q", "f-status", "f-country", "f-company"]) $(id).value = "";
   $("f-remote").checked = $("f-salary").checked = false;
@@ -391,93 +424,111 @@ async function postStatus(ids, status) {
   await refreshAll();
 }
 
-// ---- Start search button: shown only until the search has run today
-let searchTimer = null, searchWasRunning = false;
-function showSearch(s) {
-  const btn = $("start-search");
-  btn.hidden = s.ran_today && !s.running;
-  btn.disabled = s.running;
-  btn.textContent = s.running ? "Searching…" : "Start search now";
-  $("search-msg").textContent = s.running ? "Looking for new jobs. This takes a few minutes; the list refreshes when it finishes." :
-    s.ran_today ? `The search already ran today (${s.last.slice(11, 16)}).` : "";
-  clearTimeout(searchTimer);
-  if (s.running) searchTimer = setTimeout(refreshAll, 5000);
-  if (searchWasRunning && !s.running) searchTimer = setTimeout(refreshAll, 0);  // just finished: show the new jobs
-  searchWasRunning = s.running;
+// When the next application batch runs: the next weekday at apply_time ("13:00"), in this computer's time.
+function nextBatch(hhmm) {
+  const [h, m] = (hhmm || "13:00").split(":").map(Number);
+  const now = new Date(), t = new Date(now);
+  t.setHours(h, m || 0, 0, 0);
+  while (t <= now || t.getDay() === 0 || t.getDay() === 6) { t.setDate(t.getDate() + 1); t.setHours(h, m || 0, 0, 0); }
+  const days = Math.round((new Date(t).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / 864e5);
+  const day = days === 0 ? "today" : days === 1 ? "tomorrow" : t.toLocaleDateString("en-GB", { weekday: "short" });
+  return `${day} ${hhmm}`;
 }
-async function startSearch() {
-  const res = await fetch("/api/search/start", { method: "POST", headers: { "X-Token": TOKEN } });
-  if (!res.ok) alert((await res.json().catch(() => ({}))).error || "Couldn't start the search. Reload the page and try again.");
-  await loadToday();
-}
-$("start-search").addEventListener("click", startSearch);
 
-// Show 3½ rows of the Today list; the half-cut 4th row tells you there's more to scroll inside the list.
-function fitToday() {
-  const list = $("today-list"), rows = [...list.children];
-  if (rows.length <= 3) { list.style.maxHeight = ""; return; }
-  const gap = parseFloat(getComputedStyle(list).rowGap) || 0;
-  const h = rows.slice(0, 3).reduce((s, r) => s + r.offsetHeight + gap, 0) + rows[3].offsetHeight / 2;
-  list.style.maxHeight = `${Math.round(h)}px`;
-}
-window.addEventListener("resize", fitToday);
-
-let READY_IDS = [];
+// Order in the list: what needs you first, then what to choose from, then what's moving on its own.
+const STATE_ORDER = { manual: 0, listed: 1, sending: 2, preparing: 3, ready: 4 };
+let LISTED_IDS = [], wasSearching = false, pollTimer = null;
 async function loadToday() {
   const d = await (await fetch("/api/today")).json();
-  const a = d.autopilot;
-  if (d.search) showSearch(d.search);
+  const a = d.autopilot, when = d.running_since ? "sending now" : nextBatch(a.apply_time);
   $("autopilot").textContent = `Autopilot: new jobs weekdays 08:00 · applications ${a.apply_time} · ` +
-    `batch = ${a.apply_include.join(" + ")} · max ${a.max_per_day}/day · worth-it filter ${a.worth_it_filter ? "ON" : "off"}`;
-  const ready = d.waiting.filter((j) => !j.problems.length && j.in_batch && j.has_cv);
-  const pending = d.waiting.filter((j) => !j.problems.length && !j.has_cv);
-  const needs = d.waiting.filter((j) => j.problems.length);
-  READY_IDS = d.waiting.filter((j) => !j.problems.length && j.status === "queued").map((j) => j.id);
-  $("approve-ready").disabled = !READY_IDS.length;
-  $("approve-ready").textContent = READY_IDS.length ? `Approve all ready (${READY_IDS.length})` : "Approve all ready";
+    `batch = ${a.apply_include.length > 1 ? "approved (listed ones only when nothing is approved)" : a.apply_include[0]}, ` +
+    `up to ${a.max_per_batch} each · worth-it filter ${a.worth_it_filter ? "ON" : "off"}`;
+  const by = (s) => d.waiting.filter((j) => j.state === s);
+  const listed = by("listed"), manual = by("manual"), ready = by("ready"),
+    moving = d.waiting.filter((j) => j.state === "preparing" || j.state === "sending");
+  LISTED_IDS = listed.filter((j) => !j.problems.length).map((j) => j.id);
+  $("approve-ready").disabled = !LISTED_IDS.length;
+  $("approve-ready").textContent = LISTED_IDS.length ? `Approve all listed (${LISTED_IDS.length})` : "Approve all listed";
   $("today-chips").replaceChildren(
-    el("span", { class: "chip good" }, el("b", { text: ready.length }), " ready to send"),
-    el("span", { class: "chip" }, el("b", { text: pending.length }), " CV being written"),
-    el("span", { class: "chip" + (needs.length ? " warn" : "") }, el("b", { text: needs.length }), " need you"),
-    el("span", { class: "chip" }, el("b", { text: d.applied_today }), ` applied today (max ${a.max_per_day})`),
+    el("span", { class: "chip" }, el("b", { text: listed.length }), " listed to apply"),
+    el("span", { class: "chip", title: "Approved: Claude is writing the tailored CV, or sending it now" },
+      el("b", { text: moving.length }), " in progress"),
+    el("span", { class: "chip good", title: "CV ready, sent in the next application batch" },
+      el("b", { text: ready.length }), ` queued · next batch ${when}`),
+    el("span", { class: "chip" + (manual.length ? " warn" : "") }, el("b", { text: manual.length }), " need manual action"),
+    el("span", { class: "chip" }, el("b", { text: d.applied_today }), " applied today"),
     ...(d.running_since ? [el("span", { class: "chip running", text: `Sending applications… (since ${d.running_since.slice(11, 16)})` })] : []));
-  const list = $("today-list"), keepScroll = list.scrollTop;  // approving/skipping re-renders: stay where you were
-  list.replaceChildren();
-  if (!d.waiting.length) list.append(el("div", { class: "empty", text: "Nothing waiting. New matches arrive with the next morning run." }));
-  for (const j of d.waiting) {
+
+  // Find new jobs: running state, and a full refresh when it finishes
+  const s = d.search || {};
+  $("search-btn").disabled = !!s.running;
+  $("search-btn").textContent = s.running ? "Searching…" : "Find new jobs";
+  $("search-status").className = "sub" + (s.ok === false ? " err" : "");
+  $("search-status").textContent = s.running ? `Fetching, scoring and listing new jobs (started ${s.started.slice(11, 16)}). Takes a few minutes.`
+    : s.ok === false ? `Search failed: ${s.message || "see data/search.log"}`
+    : s.ok ? `Search done (started ${s.started.slice(11, 16)}).` : "";
+  if (wasSearching && !s.running) { wasSearching = false; refreshAll(); }
+  wasSearching = !!s.running;
+  clearTimeout(pollTimer);
+  if (s.running || d.running_since) pollTimer = setTimeout(loadToday, 5000);
+
+  const list = $("today-list"); list.replaceChildren();
+  if (!d.waiting.length) list.append(el("div", { class: "empty", text: "Nothing waiting. Press Find new jobs, or wait for the next morning run." }));
+  const rowsSorted = [...d.waiting].sort((x, y) => STATE_ORDER[x.state] - STATE_ORDER[y.state]);
+  for (const j of rowsSorted) {
     const url = safeUrl(j.url);
     const title = url ? el("a", { href: url, target: "_blank", rel: "noopener noreferrer", text: j.title }) : el("span", { text: j.title });
     const meta = [j.country, j.score != null ? `score ${Math.round(j.score)}` : null,
       j.viability_eur_month != null ? `saves ${fmt(j.viability_eur_month)}/month` : null].filter(Boolean).join(" · ");
     const badges = el("div", {},
-      el("span", { class: "badge " + (j.status === "approved" ? "good" : ""), text: j.status }),
       j.form_status === "ready" ? el("span", { class: "badge good", text: "form ready" }) :
         j.form_status === "needs_you" ? el("span", { class: "badge warn", text: "needs login" }) : "",
-      j.has_cv ? el("a", { class: "badge", href: `/files/${j.id}/cv.pdf`, target: "_blank", text: "CV ↗" })
-        : el("span", { class: "badge", text: "CV pending", title: "Claude writes it in the morning run, or before sending" }),
+      j.has_cv ? el("a", { class: "badge", href: `/files/${j.id}/cv.pdf`, target: "_blank", text: "CV ↗" }) : "",
       j.has_letter ? el("a", { class: "badge", href: `/files/${j.id}/letter.pdf`, target: "_blank", text: "Letter ↗" }) : "");
-    const approve = el("button", { class: "btn-ok" + (j.status === "approved" ? " on" : ""), title: "Apply to this one",
-      text: j.status === "approved" ? "✓ Approved" : "Approve",
-      onclick: () => postStatus([j.id], j.status === "approved" ? "queued" : "approved") });
-    const skip = el("button", { class: "btn-no", text: "Skip", title: "Not interested: hides it",
-      onclick: () => postStatus([j.id], "skipped") });
+    let acts;
+    if (j.state === "listed") {
+      acts = el("div", { class: "row" },
+        el("button", { class: "btn-ok", text: "Approve", title: "Apply to this one: Claude writes its CV and sends it in the next batch",
+          onclick: () => postStatus([j.id], "approved") }),
+        el("button", { class: "btn-no", text: "Skip", title: "Not interested: hides it", onclick: () => postStatus([j.id], "skipped") }));
+    } else {
+      const label = { preparing: "In progress · writing CV", sending: "In progress · sending",
+        ready: `Queued · next batch ${when}`, manual: "Needs manual action" }[j.state];
+      acts = el("div", { class: "row" },
+        el("span", { class: "state " + j.state, text: label }),
+        j.state === "sending" ? "" : el("button", { class: "linkbtn", text: "undo", title: "Back to the list (not approved)",
+          onclick: () => postStatus([j.id], "queued") }));
+    }
+    const why = j.state === "manual" ? j.detail : j.problems.join(" · ");
     list.append(el("div", { class: "trow" },
       el("div", {}, el("div", { class: "t" }, el("span", { text: j.company + " · " }), title),
         el("div", { class: "meta", text: meta }), badges),
-      el("div", { class: "acts" }, approve, skip),
-      ...(j.problems.length ? [el("div", { class: "problems", text: "Needs you: " + j.problems.join(" · ") +
-        (j.problems.some((p) => p.startsWith("your ")) ? ". Tell Claude once and it's remembered for every job." : "") })] : [])));
+      el("div", { class: "acts" }, acts),
+      ...(why ? [el("div", { class: "problems", text: "Needs you: " + why +
+        (/(^|· )your /.test(why) ? ". Tell Claude once and it's remembered for every job." : "") })] : [])));
   }
-  fitToday();
-  list.scrollTop = keepScroll;
   $("today-hint").textContent =
-    `At ${a.apply_time} on weekdays you get a notification with today's batch (${a.apply_include.join(" + ")}). ` +
-    `Open it and reply "send all" (or "send all except …"). Nothing is sent before your reply. ` +
-    `To send right now, press Run now on "Daily applications" under Scheduled in the Claude app, or tell Claude "send my applications".`;
+    `Approve a job to start its application: Claude writes its tailored CV, then it goes in the next batch ` +
+    `(weekdays ${a.apply_time}, or press Apply now). You get the list in Claude and reply "send all" ` +
+    `(or "send all except …"). Nothing is sent before your reply. Applied jobs leave this list; find them under Jobs.`;
 }
 
-async function refreshAll() { await Promise.all([loadStats(), loadToday()]); loadJobs(PAGE); }  // stay on the same page
-$("approve-ready").addEventListener("click", () => READY_IDS.length && postStatus(READY_IDS, "approved"));
+async function refreshAll() { await Promise.all([loadStats(), loadToday()]); loadJobs({ keepPage: true }); }
+$("pg-per").addEventListener("change", () => loadJobs());
+$("approve-ready").addEventListener("click", () => LISTED_IDS.length && postStatus(LISTED_IDS, "approved"));
+$("apply-btn").addEventListener("click", () => { $("apply-help").hidden = !$("apply-help").hidden; });
+$("copy-cmd").addEventListener("click", async (e) => {
+  try { await navigator.clipboard.writeText($("apply-cmd").textContent); e.target.textContent = "Copied"; }
+  catch { getSelection().selectAllChildren($("apply-cmd")); e.target.textContent = "Press Ctrl+C"; }
+  setTimeout(() => { e.target.textContent = "Copy"; }, 2000);
+});
+$("search-btn").addEventListener("click", async () => {
+  $("search-btn").disabled = true;
+  const res = await fetch("/api/search", { method: "POST", headers: { "X-Token": TOKEN } });
+  if (!res.ok && res.status !== 409) alert("Couldn't start the search. Reload the page and try again.");
+  loadToday();
+});
 
 loadStats().then(applySort).then(loadToday).catch((e) => { $("lastrun").textContent = "Error: " + e; });
 </script>

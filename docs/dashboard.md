@@ -12,13 +12,31 @@ Your browser opens **http://127.0.0.1:8765**. Keep the terminal open while you u
 
 ## Today (top of the page)
 
-Everything waiting for you, in one list: today's **queued** picks and the jobs you **approved**.
+Everything waiting for you, in one list: the jobs **listed to apply** (queued) and the ones you **approved**.
 
-- Counters: **ready to send**, **CV being written**, **need you**, **applied today**.
+- Buttons: **Find new jobs** searches right now (fetch, score, list the best; a few minutes).
+  **Apply now** shows how to send the ready ones now instead of at the next batch.
+  **Approve all listed** approves every listed job with nothing missing.
+- Counters: **listed to apply**, **in progress**, **queued · next batch** (with the day and time), **need manual action**, **applied today**.
+- Listed jobs have **Approve** and **Skip**. Approving starts the application, and the buttons turn into its state:
+
+  | State | Meaning |
+  |---|---|
+  | **In progress · writing CV** | Claude writes the tailored CV in the next run. |
+  | **Queued · next batch …** | Ready. Sent in the next batch, after your "send all". |
+  | **In progress · sending** | Being sent right now. |
+  | **Needs manual action** | A login, a missing answer, or the last try failed (e.g. CAPTCHA). The orange line says which. |
+
+  **undo** puts it back in the list. Once sent, a job leaves Today; find it under **Jobs** with status *applied*.
 - Each job shows its score, monthly savings (if checked), whether its form is ready, and links to its **CV ↗** and **Letter ↗**.
-- **Approve** (click again to undo) or **Skip** with one click. **Approve all ready** approves every queued job with nothing missing.
+- The list scrolls inside the panel, so it never fills the whole page.
 - Orange **"Needs you"** lines say exactly what's missing, like *your salary expectation for Germany*. Tell Claude once and it's remembered.
 - The top line shows your [autopilot](autopilot.md) settings, and *"Sending applications…"* while a batch is being sent.
+
+## Jobs list (bottom of the page)
+
+Every job, with filters and sorting. It shows **50 jobs per page** (change it to 25, 100 or 200 below the table).
+Use **‹ Previous** / **Next ›**, or **«** / **»** for the first and last page. Changing a filter or the sorting goes back to page 1.
 
 ## Everything else
 
@@ -42,7 +60,7 @@ Every job has one status. You change it with the menu on the right of each row.
 |---|---|
 | **new** | Just found on a company's job board, not scored yet. |
 | **scored** | Has a fit score and waits in the big pool. Most jobs stay here. |
-| **queued** | **Today's top picks, waiting for your review.** Each run moves the best-scoring jobs here (15 by default, at most 2 per company), and Claude writes a tailored CV for each. Think of it as your inbox. |
+| **queued** | **Listed to apply: today's top picks, waiting for your review.** Each run moves the best-scoring jobs here (15 by default, at most 2 per company). Think of it as your inbox. Approve one to start its application. |
 | **closed** | The job disappeared from the company's site. Only happens to jobs you hadn't acted on. |
 
 **Set by you:**
@@ -71,18 +89,21 @@ The status filter above the table decides which jobs you see:
 
 You can combine it with the **search** box (searches titles, companies and job descriptions), **country**, **company**, **Remote** and **Has salary**.
 
-### Sorting by one or two columns
+### Sorting by up to three columns
 
-Use the **Sort by** and **then by** menus above the table. The arrow button next to each one flips the order
-(↓ = highest, newest or Z first; ↑ = lowest, oldest or A first).
+**Click column titles.** No menus, no keys to hold.
 
-The second sort only matters when the first one is a tie. For example, to see **the latest jobs, and among those
-the ones that save you the most per month first**:
+| Click on a title… | What happens |
+|---|---|
+| not sorted yet | It's added as the next sort (1st, 2nd, then 3rd). With 3 already, it replaces the 3rd. |
+| sorted | Its order flips (↓ = highest, newest or Z first; ↑ = lowest, oldest or A first). |
+| sorted and already flipped | It's removed from the sort. |
 
-> Sort by **Date posted ↓**, then by **Savings / month ↓**
+The titles show **↓1**, **↓2**, **↑3**, and the line above the table says it in words, e.g.
+*"Sorted by Date posted ↓, then Saves / month ↓"*. **reset sorting** goes back to newest first.
 
-Shortcut: **click a column title** to sort by it, and **Shift + click** another title to sort by it second.
-Click the same title again to flip its order. The titles show **↓1** and **↓2** so you can see the current sort.
+A 2nd or 3rd sort only matters when the ones before it are a tie. For example, to see **the latest jobs, and among
+those the ones that save you the most per month first**: start from the default (Date posted ↓) and click **Saves / month** once.
 
 **Reset** puts back the default view: Active jobs, newest first.
 

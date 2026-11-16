@@ -7,6 +7,13 @@
       "runtimeArgs": ["scripts/dashboard.py", "--no-open"],
       "port": 8765,
       "url": "http://127.0.0.1:8765"
+    },
+    {
+      "name": "dashboard-test",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["scripts/dashboard.py", "--no-open", "--port", "8766"],
+      "port": 8766,
+      "url": "http://127.0.0.1:8766"
     }
   ]
 }
