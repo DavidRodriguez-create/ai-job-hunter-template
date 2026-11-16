@@ -31,8 +31,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PAGE = Path(__file__).resolve().parent / "dashboard.html"
 PREFS = tomllib.loads((ROOT / "profile" / "preferences.toml").read_text(encoding="utf-8"))
 TOKEN = secrets.token_urlsafe(24)
-FUNNEL = ["new", "scored", "queued", "approved", "applied", "interview", "offer"]
-CLOSED = ["rejected", "skipped", "closed"]
+# Pipeline donut: only the statuses where something happened to a job (you or the company acted).
+# 'new' and 'scored' (nearly every job) and 'closed' (posting taken down) are shown as a line of text instead.
+PIPELINE = ["queued", "approved", "applied", "interview", "offer", "rejected", "skipped"]
 
 
 def rows(conn, sql, args=()):
@@ -81,8 +82,12 @@ def stats(conn) -> dict:
             "response_rate": round(100 * responded / applied_ever) if applied_ever else None,
             "with_salary": one(f"SELECT COUNT(*) FROM jobs WHERE salary_min IS NOT NULL AND {open_}"),
         },
-        "funnel": [{"k": s, "n": by_status.get(s, 0)} for s in FUNNEL],
-        "closed": [{"k": s, "n": by_status.get(s, 0)} for s in CLOSED],
+        "pipeline": {
+            "acted": [{"k": s, "n": by_status.get(s, 0)} for s in PIPELINE],
+            "new": by_status.get("new", 0),
+            "scored": by_status.get("scored", 0),
+            "closed": by_status.get("closed", 0),
+        },
         "by_country": [dict(r, tier=1 if r["k"] in tiers.get("tier1", []) else
                             2 if r["k"] in tiers.get("tier2", []) else 3)
                        for r in rows(conn, f"SELECT COALESCE(country,'Unknown') k, COUNT(*) n FROM jobs "

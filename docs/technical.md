@@ -40,7 +40,7 @@ output/<id>-<company>/   tailor.json, cv.pdf, cover_letter.pdf (git-ignored)
 ## Job statuses
 
 `new → scored → queued → approved → applied → interview → offer`, plus `rejected`, `skipped`, `closed`.
-Every change is logged in the `events` table (powers the dashboard's funnel and activity chart).
+Every change is logged in the `events` table (powers the dashboard's activity chart and response rate).
 
 ## Sources
 

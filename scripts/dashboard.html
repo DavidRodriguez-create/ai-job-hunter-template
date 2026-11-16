@@ -4,18 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Job Hunt</title>
+<script>try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
 <style>
 :root {
   --bg: #f6f7f9; --panel: #ffffff; --ink: #1b1f24; --muted: #667085; --line: #e4e7ec;
   --accent: #2f5bea; --accent-soft: #dbe4ff; --t1: #2f5bea; --t2: #7c93e8; --t3: #c3cad8;
   --good: #12805c; --warn: #b54708; --bad: #b42318; --found: #98a2b3;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --out1: #667085; --out2: #c3cad8;
 }
+/* Theme: Auto follows the computer; Light / Dark (the switch in the header) set data-theme and win both ways */
+:root { color-scheme: light; }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #0f1216; --panel: #171b21; --ink: #e6e9ef; --muted: #98a2b3; --line: #262c35;
     --accent: #7b9cff; --accent-soft: #23305a; --t1: #7b9cff; --t2: #4d63b0; --t3: #3a4252;
     --good: #47cd89; --warn: #f79009; --bad: #f97066; --found: #4b5565;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --out1: #98a2b3; --out2: #4b5565;
   }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1216; --panel: #171b21; --ink: #e6e9ef; --muted: #98a2b3; --line: #262c35;
+  --accent: #7b9cff; --accent-soft: #23305a; --t1: #7b9cff; --t2: #4d63b0; --t3: #3a4252;
+  --good: #47cd89; --warn: #f79009; --bad: #f97066; --found: #4b5565;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --out1: #98a2b3; --out2: #4b5565;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink);
@@ -27,9 +40,34 @@ h2 { font-size: 13px; margin: 0 0 12px; color: var(--muted); font-weight: 600; t
 .sub { color: var(--muted); font-size: 13px; }
 main { padding: 8px 24px 40px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 1400px; margin: 0 auto; }
 main > *, .grid2 > * { min-width: 0; }
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 12px; }
 .kpi, .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-.kpi .v { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.kpi { padding: 8px 14px; }
+.kpi .v { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+/* Tabs: Jobs (do things) and Insights (charts) */
+.tabs { display: flex; gap: 4px; }
+.tabs button { border: 0; background: none; padding: 6px 12px; border-radius: 6px; color: var(--muted); font-weight: 600; }
+.tabs button:hover { color: var(--ink); background: var(--panel); }
+.tabs button[aria-selected=true] { background: var(--accent-soft); color: var(--accent); }
+.theme { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.theme button { border: 0; border-radius: 0; background: none; padding: 3px 9px; font-size: 12px; color: var(--muted); }
+.theme button + button { border-left: 1px solid var(--line); }
+.theme button[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); }
+.hdr-right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.tabpanel { display: grid; gap: 16px; } .tabpanel[hidden] { display: none; }
+.tabpanel > * { min-width: 0; }
+/* Pipeline donut */
+.donut { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; }
+.donut svg { width: 170px; height: 170px; flex: none; }
+.donut svg path { cursor: pointer; } .donut svg path:hover { opacity: .8; }
+.donut .mid { fill: var(--ink); font-size: 20px; font-weight: 650; }
+.donut .unit { font-size: 7px; }
+.dlist { display: grid; grid-template-columns: 12px auto auto auto; gap: 5px 10px; align-items: center; flex: 1; min-width: 200px; max-width: 320px; }
+.dlist i { width: 10px; height: 10px; border-radius: 2px; }
+.dlist .lab { cursor: pointer; } .dlist .lab:hover { color: var(--accent); text-decoration: underline; }
+.dlist .zero { color: var(--muted); }
+.dlist .num { text-align: right; font-variant-numeric: tabular-nums; }
+.dlist .pct { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
 .kpi .l { color: var(--muted); font-size: 12px; }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; }
 .bars { display: grid; grid-template-columns: minmax(90px, max-content) 1fr 48px; gap: 6px 10px; align-items: center; }
@@ -121,10 +159,26 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
 </head>
 <body>
 <header>
-  <h1>Job Hunt</h1>
-  <div class="sub" id="lastrun">Loading…</div>
+  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+    <h1>Job Hunt</h1>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-jobs" aria-controls="panel-jobs" aria-selected="true">Jobs</button>
+      <button role="tab" id="tab-insights" aria-controls="panel-insights" aria-selected="false">Insights</button>
+    </nav>
+  </div>
+  <div class="hdr-right">
+    <div class="sub" id="lastrun">Loading…</div>
+    <div class="theme" role="group" aria-label="Colour theme">
+      <button data-theme="auto" title="Follow your computer's setting">Auto</button>
+      <button data-theme="light">Light</button>
+      <button data-theme="dark">Dark</button>
+    </div>
+  </div>
 </header>
 <main>
+  <section class="kpis" id="kpis"></section>
+
+  <div class="tabpanel" id="panel-jobs" role="tabpanel">
   <section class="card" id="today">
     <div class="today-head">
       <h2 style="margin:0">Today</h2>
@@ -150,30 +204,6 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
     <div class="chips" id="today-chips"></div>
     <div class="tlist" id="today-list"></div>
     <div class="hint" id="today-hint"></div>
-  </section>
-
-  <section class="kpis" id="kpis"></section>
-
-  <section class="grid2">
-    <div class="card"><h2>Pipeline</h2><div class="bars" id="funnel"></div>
-      <div class="legend" id="closed"></div></div>
-    <div class="card"><h2>Open jobs by country</h2><div class="bars" id="countries"></div>
-      <div class="legend"><span><i style="background:var(--t1)"></i>Tier 1 target</span>
-        <span><i style="background:var(--t2)"></i>Tier 2</span><span><i style="background:var(--t3)"></i>Other / remote</span></div></div>
-  </section>
-
-  <section class="grid2">
-    <div class="card"><h2>Activity · last 30 days</h2><div id="activity"></div>
-      <div class="legend"><span><i style="background:var(--found)"></i>Jobs found</span>
-        <span><i style="background:var(--accent)"></i>Applied</span></div></div>
-    <div class="card"><h2>Your stack in open jobs</h2><div class="bars" id="stack"></div>
-      <div class="legend"><span><i style="background:var(--accent)"></i>Core stack</span>
-        <span><i style="background:var(--t2)"></i>Stretch / new challenge</span></div></div>
-  </section>
-
-  <section class="grid2">
-    <div class="card"><h2>Top companies</h2><div class="bars" id="companies"></div></div>
-    <div class="card"><h2>Salaries published in postings</h2><div id="salary"></div></div>
   </section>
 
   <section class="card" id="jobs">
@@ -210,6 +240,31 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
       <tbody id="rows"></tbody>
     </table></div>
   </section>
+  </div>
+
+  <div class="tabpanel" id="panel-insights" role="tabpanel" hidden>
+  <section class="grid2">
+    <div class="card"><h2>Pipeline · jobs you acted on</h2><div class="donut" id="pipeline"></div>
+      <div class="sub" id="pipeline-rest" style="margin-top:12px"></div></div>
+    <div class="card"><h2>Open jobs by country</h2><div class="bars" id="countries"></div>
+      <div class="legend"><span><i style="background:var(--t1)"></i>Tier 1 target</span>
+        <span><i style="background:var(--t2)"></i>Tier 2</span><span><i style="background:var(--t3)"></i>Other / remote</span></div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Activity · last 30 days</h2><div id="activity"></div>
+      <div class="legend"><span><i style="background:var(--found)"></i>Jobs found</span>
+        <span><i style="background:var(--accent)"></i>Applied</span></div></div>
+    <div class="card"><h2>Your stack in open jobs</h2><div class="bars" id="stack"></div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>Core stack</span>
+        <span><i style="background:var(--t2)"></i>Stretch / new challenge</span></div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Top companies</h2><div class="bars" id="companies"></div></div>
+    <div class="card"><h2>Salaries published in postings</h2><div id="salary"></div></div>
+  </section>
+  </div>
 </main>
 
 <script>
@@ -266,6 +321,53 @@ function activity(data) {
   box.append(svg);
 }
 
+// Pipeline donut: the jobs you (or a company) acted on. Each status keeps its color whatever the counts.
+const PIPE_COLOR = { queued: "--s1", approved: "--s2", applied: "--s3", interview: "--s4", offer: "--s5",
+  rejected: "--out1", skipped: "--out2" };
+const PIPE_LABEL = { queued: "Listed to apply", approved: "Approved", applied: "Applied", interview: "Interview",
+  offer: "Offer", rejected: "Rejected", skipped: "Skipped by you" };
+function pipeline(p) {
+  const box = $("pipeline"); box.replaceChildren();
+  const total = p.acted.reduce((a, d) => a + d.n, 0);
+  const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 100 100");
+  svg.setAttribute("role", "img"); svg.setAttribute("aria-label", `Pipeline: ${total} jobs you acted on`);
+  const add = (tag, a) => { const n = document.createElementNS(NS, tag); for (const k in a) n.setAttribute(k, a[k]); svg.append(n); return n; };
+  const R = 48, r = 31, pt = (rad, a) => [50 + rad * Math.sin(a), 50 - rad * Math.cos(a)];
+  if (!total) add("circle", { cx: 50, cy: 50, r: (R + r) / 2, fill: "none", stroke: "var(--line)", "stroke-width": R - r });
+  let a0 = 0;
+  for (const d of p.acted.filter((d) => d.n)) {
+    const a1 = a0 + (2 * Math.PI * d.n) / total, big = a1 - a0 > Math.PI ? 1 : 0;
+    // one slice = whole circle: draw it as two halves so the arc isn't empty
+    const seg = d.n === total ? [[0, Math.PI], [Math.PI, 2 * Math.PI]] : [[a0, a1]];
+    for (const [s0, s1] of seg) {
+      const b = seg.length > 1 ? 0 : big, [x0, y0] = pt(R, s0), [x1, y1] = pt(R, s1), [x2, y2] = pt(r, s1), [x3, y3] = pt(r, s0);
+      const path = add("path", { d: `M${x0},${y0} A${R},${R} 0 ${b} 1 ${x1},${y1} L${x2},${y2} A${r},${r} 0 ${b} 0 ${x3},${y3} Z`,
+        fill: `var(${PIPE_COLOR[d.k]})`, stroke: "var(--panel)", "stroke-width": 1 });
+      const t = document.createElementNS(NS, "title");
+      t.textContent = `${PIPE_LABEL[d.k]}: ${fmt(d.n)} (${Math.round((100 * d.n) / total)}%). Click to list them.`;
+      path.append(t); path.addEventListener("click", () => setFilter("f-status", d.k));
+    }
+    a0 = a1;
+  }
+  add("text", { x: 50, y: 52, "text-anchor": "middle", "dominant-baseline": "middle", class: "mid" }).textContent = fmt(total);
+  add("text", { x: 50, y: 66, "text-anchor": "middle", class: "unit" }).textContent = "jobs";
+  // legend with counts: identity never by color alone, and each row filters the jobs list
+  const list = el("div", { class: "dlist" });
+  for (const d of p.acted) {
+    const zero = d.n ? "" : " zero";
+    list.append(el("i", { style: `background:var(${PIPE_COLOR[d.k]})` + (d.n ? "" : ";opacity:.35") }),
+      el("span", { class: "lab" + zero, text: PIPE_LABEL[d.k], title: `List the ${d.k} jobs`, onclick: () => setFilter("f-status", d.k) }),
+      el("span", { class: "num" + zero, text: fmt(d.n) }),
+      el("span", { class: "pct", text: total && d.n ? Math.round((100 * d.n) / total) + "%" : "" }));
+  }
+  box.append(svg, list);
+  const seen = p.scored + total;
+  $("pipeline-rest").textContent = `Not in the chart: ${fmt(p.scored)} scored jobs that didn't make your list` +
+    (seen ? ` (${fmt(total)} of ${fmt(seen)} did, ${(100 * total / seen).toFixed(1)}%)` : "") +
+    ` · ${fmt(p.closed)} postings closed by the company` + (p.new ? ` · ${fmt(p.new)} waiting to be scored` : "") + ".";
+}
+
 function salary(data) {
   const box = $("salary"); box.replaceChildren();
   if (!data.length) { box.append(el("div", { class: "empty", text: "No salaries published yet" })); return; }
@@ -298,8 +400,7 @@ async function loadStats() {
   const s = await (await fetch("/api/stats")).json();
   STATUSES = s.filters.statuses;
   kpis(s.kpi);
-  bars("funnel", s.funnel, { onClick: (d) => setFilter("f-status", d.k) });
-  $("closed").replaceChildren(...s.closed.map((c) => el("span", { text: `${c.k}: ${fmt(c.n)}` })));
+  pipeline(s.pipeline);
   bars("countries", s.by_country, { color: (d) => `var(--t${d.tier})`, onClick: (d) => setFilter("f-country", d.k) });
   bars("companies", s.by_company, { onClick: (d) => setFilter("f-company", d.k) });
   bars("stack", s.stack, { color: (d) => d.core ? "var(--accent)" : "var(--t2)" });
@@ -313,7 +414,33 @@ async function loadStats() {
   fillSelect("f-company", s.filters.companies);
 }
 
-function setFilter(id, v) { $(id).value = v; loadJobs(); $("rows").closest("section").scrollIntoView({ behavior: "smooth" }); }
+// A click on a chart: open the Jobs tab with that filter on.
+function setFilter(id, v) {
+  $(id).value = v; showTab("jobs"); loadJobs();
+  $("jobs").scrollIntoView({ behavior: "smooth" });
+}
+
+// ---- tabs: Jobs (Today + the jobs list) and Insights (charts). The last one used is remembered in this browser.
+function showTab(name) {
+  for (const t of ["jobs", "insights"]) {
+    $("tab-" + t).setAttribute("aria-selected", String(t === name));
+    $("panel-" + t).hidden = t !== name;
+  }
+  try { localStorage.setItem("tab", name); } catch {}
+  if (name === "jobs" && typeof fitMode === "function" && fitMode()) repage();  // the list can only measure itself when shown
+}
+// ---- theme: Auto (follow the computer), Light or Dark. Remembered in this browser.
+function setTheme(t) {
+  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;
+  document.querySelectorAll(".theme button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.theme === (t || "auto"))));
+  try { t === "light" || t === "dark" ? localStorage.setItem("theme", t) : localStorage.removeItem("theme"); } catch {}
+}
+document.querySelectorAll(".theme button").forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.theme)));
+setTheme(document.documentElement.dataset.theme);
+$("tab-jobs").addEventListener("click", () => showTab("jobs"));
+$("tab-insights").addEventListener("click", () => showTab("insights"));
+try { if (localStorage.getItem("tab") === "insights") showTab("insights"); } catch {}
 
 async function setStatus(id, status, sel) {
   sel.disabled = true;

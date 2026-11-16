@@ -10,7 +10,18 @@ python scripts/dashboard.py
 
 Your browser opens **http://127.0.0.1:8765**. Keep the terminal open while you use it; press `Ctrl + C` there to stop it.
 
-## Today (top of the page)
+## Layout: two tabs
+
+| Tab | What's in it |
+|---|---|
+| **Jobs** *(default)* | **Today** (what's waiting for you) and the **Jobs list**. This is where you act. |
+| **Insights** | The charts: pipeline, countries, activity, your stack, companies, salaries. |
+
+The tabs are next to the title. The page remembers the last one you used.
+**Auto / Light / Dark** (top right) picks the colours: Auto follows your computer's setting, and the page remembers your choice.
+A row of **numbers** sits above both tabs: open jobs, new today, approved, applied, interviews, offers, and your response rate.
+
+## Today (Jobs tab, top)
 
 Everything waiting for you, in one list: the jobs **listed to apply** (queued) and the ones you **approved**.
 
@@ -33,7 +44,7 @@ Everything waiting for you, in one list: the jobs **listed to apply** (queued) a
 - Orange **"Needs you"** lines say exactly what's missing, like *your salary expectation for Germany*. Tell Claude once and it's remembered.
 - The top line shows your [autopilot](autopilot.md) settings, and *"Sending applications…"* while a batch is being sent.
 
-## Jobs list (bottom of the page)
+## Jobs list (Jobs tab, under Today)
 
 Every job, with filters and sorting. By default each page holds as many jobs as fit in your window (**Fit window**),
 so the list never scrolls. To see more at once, pick **25**, **50**, **75** or **100 rows** in the menu at the top right.
@@ -41,17 +52,15 @@ The page remembers your choice.
 The total number of jobs and the pages are at the top right: click a page number, or **‹** / **›** for the previous and next page.
 Changing a filter or the sorting goes back to page 1. Long titles are cut short: hover one to read it all.
 
-## Everything else
+## Insights tab
 
-- **Numbers:** open jobs, new today, approved, applied, interviews, offers, and your response rate.
-- **Pipeline:** how many jobs are at each step (new → scored → queued → approved → applied → interview → offer).
+- **Pipeline:** a ring chart of the jobs you acted on: listed to apply, approved, applied, interview, offer, rejected,
+  skipped by you. The line under it counts the rest: scored jobs that didn't make your list, and postings the company closed.
 - **Jobs by country**, coloured by how high each country is on your list.
 - **Activity:** jobs found and applications sent over the last 30 days.
 - **Your stack:** how many open jobs mention each of your skills (useful to know what to learn next).
 - **Top companies** and **published salaries**.
-- **The job table** (see below).
-
-Click a bar (a country, a company, a pipeline step) to filter the table.
+Click a bar or a slice (a country, a company, a pipeline step) to open the **Jobs** tab with that filter on.
 
 ## Job statuses
 
