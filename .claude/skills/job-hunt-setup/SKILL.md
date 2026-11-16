@@ -48,7 +48,9 @@ Ask, in one or two messages:
 7. Optional: current salary and currency (only for forms and the worth-it check; they can skip).
 
 Write **`profile/preferences.toml`** (roles → `title_include_any`/`exclude_title_words`, skills → `[stack]`,
-countries → `[locations]`, visa → `[visa]`, languages → `languages_spoken`) and **`profile/answers.toml`**.
+programming languages from the CV → `[stack] languages`, countries → `[locations]`, visa → `[visa]`,
+spoken languages → `languages_spoken`; keep the template's `[domains]` unless that specialist area is what they
+want, e.g. delete `[domains.security]` for a security engineer) and **`profile/answers.toml`**.
 Country names must match the ones in `scripts/fetch_jobs.py` → `COUNTRY_HINTS` (e.g. "United States",
 "United Kingdom"). If they want a country that's missing there, add it with its main cities.
 

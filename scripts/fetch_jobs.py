@@ -75,8 +75,8 @@ COUNTRY_HINTS: dict[str, list[str]] = {
     "France": ["france", "paris", "nice", "sophia antipolis", "lyon", "toulouse", "marseille", "fr"],
     "Spain": ["spain", "españa", "madrid", "barcelona", "valencia", "malaga", "málaga", "es"],
 }
-# Two-letter hints are ambiguous (e.g. "CA", "IN"): only trusted after a separator, e.g. "Austin, TX",
-# "Remote - US", "Remote (CA)".
+# Two-letter hints are ambiguous (e.g. "CA", "IN"): only trusted after a separator or "remote", e.g.
+# "Austin, TX", "Remote - US", "Remote (CA)", "Remote US".
 _SHORT = {h for hints in COUNTRY_HINTS.values() for h in hints if len(h) <= 2}
 REMOTE_RE = re.compile(r"\bremote\b|\banywhere\b|work from home", re.I)
 # Remote jobs with no single country: keep only if the region is open to someone based in Europe.
@@ -102,7 +102,7 @@ def detect_country(location: str | None, country_code: str | None = None) -> str
                 return country
     for country, hints in COUNTRY_HINTS.items():
         for h in hints:
-            if h in _SHORT and re.search(rf"[,\-–(/]\s*{re.escape(h)}(?![\w])", text):
+            if h in _SHORT and re.search(rf"(?:[,\-–(/]|^|\bremote)\s*{re.escape(h)}(?![\w])", text):
                 return country
     for region, rx in REGION_HINTS.items():
         if rx.search(text):

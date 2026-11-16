@@ -27,8 +27,31 @@ title_exclude_any = [
 [stack]
 # Skills you HAVE: big score boost when a job mentions them
 core = ["Python", "Java", "SQL", "Kafka", "Spark", "AWS", "Kubernetes", "Terraform"]
-# Skills you'd LIKE to learn: small boost, never a reason to reject
+# Skills you'd LIKE to learn: small boost; a job that demands years of one of these loses a few points
 stretch = ["Go", "Rust", "Kotlin", "Flink", "GCP", "Azure", "LLM", "Distributed systems"]
+# Programming languages you can work in. A job that requires a language not listed here or in
+# core/stretch loses points ("2+ years of Golang", "mastery of Ruby").
+languages = ["Python", "Java", "SQL"]
+
+[scoring]
+domain_penalty = 25        # points lost when a job is in one of the [domains] below
+domain_min_keywords = 2    # how many of a domain's keywords the job must ask for (a title word is enough on its own)
+
+# Specialist areas that shouldn't score like general backend work. A job counts as one when its title has a
+# "title" word, or what it asks for mentions domain_min_keywords of the "keywords". Add, edit or delete freely
+# (delete a whole section if that area is exactly what you want).
+[domains.security]
+title = ["security", "AppSec", "DevSecOps"]
+keywords = ["security engineering", "application security", "infrastructure security", "cloud security",
+            "Software Composition Analysis", "SCA", "vulnerability", "vulnerabilities", "eBPF", "SELinux",
+            "AppArmor", "SIEM", "threat detection", "threat modeling", "penetration testing", "zero trust",
+            "FedRAMP", "incident response", "security controls", "secure coding"]
+
+[domains.ml_infra]
+title = ["machine learning", "ML", "MLOps", "ML Ops"]
+keywords = ["feature store", "feature stores", "model serving", "model training", "ML infrastructure",
+            "ML platform", "MLOps", "ML Ops", "PyTorch", "TensorFlow", "training pipelines", "Kubeflow",
+            "MLflow", "GPU clusters"]
 
 [company]
 prefer = "large international"
