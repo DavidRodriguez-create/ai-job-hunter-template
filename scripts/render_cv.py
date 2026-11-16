@@ -54,7 +54,7 @@ CSS = """
 * { box-sizing: border-box; }
 html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: Calibri, Carlito, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 9.8pt;
-       line-height: 1.3; color: #1f2430; margin: 0; }
+       line-height: 1.3; color: #1f2430; margin: 0; width: 210mm; }   /* same width on screen and in print */
 a { color: inherit; }
 .top { background: ACC; color: #fff; padding: 8mm 11mm 6mm 10mm; }
 .top h1 { font-size: 22pt; text-transform: uppercase; letter-spacing: .4px; margin: 0; line-height: 1.1; }
@@ -63,7 +63,9 @@ a { color: inherit; }
            border-right: 1px solid #dbe2ee; z-index: -1; }
 .cols { display: flex; }
 aside { width: 60mm; flex: none; padding: 5mm 5mm 5mm 10mm; font-size: 9.2pt; }
-main { flex: 1; padding: 5mm 11mm 5mm 6mm; }
+main { flex: 1; padding: 5mm 11mm 5mm 6mm; line-height: var(--lh); }
+main section { margin-bottom: var(--sec); }
+main h2 { margin-bottom: var(--h2); }
 h2 { font-size: 11pt; text-transform: uppercase; letter-spacing: .3px; color: ACC; margin: 0 0 4px;
      border-bottom: 1.3px solid ACC; padding-bottom: 1px; }
 aside h2 { border-bottom-color: #9fb0cd; margin-bottom: 7px; }
@@ -78,12 +80,16 @@ p { margin: 0; }
 aside section > div:last-child { margin-bottom: 0; }
 .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .when { color: #5a6070; font-style: italic; font-size: 8.8pt; white-space: nowrap; }
-.job { margin-bottom: 5px; }
+.job { margin-bottom: var(--job); }
 .job-h { font-weight: 700; font-size: 10.3pt; } .job-h .co { font-weight: 600; color: #5a6070; font-size: 9.6pt; }
-.proj { margin: 4px 0 1px 8px; color: ACC; font-weight: 600; }
+.proj { margin: var(--proj) 0 2px 8px; color: ACC; font-weight: 600; }
 .proj > span:first-child::before { content: "» "; }
-ul { margin: 1px 0 3px 8px; padding-left: 16px; } li { margin: 1.5px 0; }
-.vol { margin: 2px 0; }
+ul { margin: 2px 0 3px 8px; padding-left: 16px; } li { margin: var(--li) 0; }
+.vol { margin: var(--li) 0; }
+/* Main-column spacing. The renderer tries the roomiest density that still fits on 1 page. */
+.d-airy    { --lh: 1.36; --li: 3.5px; --proj: 8px; --job: 10px; --sec: 16px; --h2: 7px; }
+.d-normal  { --lh: 1.33; --li: 2.5px; --proj: 6px; --job: 8px;  --sec: 13px; --h2: 6px; }
+.d-compact { --lh: 1.30; --li: 1.5px; --proj: 4px; --job: 5px;  --sec: 9px;  --h2: 4px; }
 .letter-page { padding: 14mm 16mm; }
 .letter-page h1 { font-size: 20pt; margin: 0; color: ACC; }
 .letter-page .contact { font-size: 9.5pt; color: #444; }
@@ -150,7 +156,23 @@ def sidebar(cv: dict) -> str:
     return "".join(out)
 
 
-def cv_html(cv: dict) -> str:
+DENSITIES = ["airy", "normal", "compact"]   # tried in this order; the first that fits on 1 page wins
+
+# Filling the page: the main column's gaps (bullets, projects, jobs, sections) and line height grow by a factor k.
+# render() tries larger k, re-renders and keeps the largest that is still one page. The browser's own
+# measurements don't match the printed page, so the PDF page count is the judge.
+AIRY = {"--li": 3.5, "--proj": 8, "--job": 10, "--sec": 16, "--h2": 7}
+AIRY_LH, MAX_LH, MAX_STRETCH = 1.36, 1.5, 2.6
+BOTTOM_MARGIN = "0mm"   # extra space kept under the last line when filling (Chrome's print already keeps ~1 cm)
+
+
+def stretch_style(k: float) -> str:
+    vars_ = [f"{n}: {v * k:.2f}px" for n, v in AIRY.items()]
+    vars_.append(f"--lh: {min(MAX_LH, AIRY_LH * (1 + (k - 1) * 0.07)):.3f}")
+    return "; ".join(vars_)
+
+
+def cv_html(cv: dict, density: str = "compact", stretch: float | None = None) -> str:
     main = [f"<section><h2>Summary</h2><p>{rich(cv['summary'])}</p></section>", "<section><h2>Work experience</h2>"]
     for job in cv["experience"]:
         where = " · ".join(x for x in (job.get("dates", ""), job.get("location", "")) if x)
@@ -169,8 +191,11 @@ def cv_html(cv: dict) -> str:
             for r, o, w in cv["volunteer"]) + "</section>")
     body = (f"<div class='side-bg'></div><header class='top'><h1>{e(cv['name'])}</h1>"
             f"<div class='headline'>{e(cv['headline'])}</div></header>"
-            f"<div class='cols'><aside>{sidebar(cv)}</aside><main>{''.join(main)}</main></div>")
-    return page(cv["name"] + " — CV", body)
+            f"<div class='cols'><aside>{sidebar(cv)}</aside><main>{''.join(main)}</main></div>"
+            )
+    if stretch:   # reserve a bottom margin so filled text never touches the page edge
+        body = body.replace("</main>", f"<div style='height: {BOTTOM_MARGIN}'></div></main>")
+    return page(cv["name"] + " — CV", body, f"d-{density}", stretch_style(stretch) if stretch else "")
 
 
 def letter_html(cv: dict) -> str:
@@ -185,9 +210,10 @@ def letter_html(cv: dict) -> str:
     return page(cv["name"] + " — Cover letter", body)
 
 
-def page(title: str, body: str) -> str:
+def page(title: str, body: str, body_class: str = "d-compact", style: str = "") -> str:
+    st = f" style='{style}'" if style else ""
     return (f"<!doctype html><html lang='en'><head><meta charset='utf-8'><title>{e(title)}</title>"
-            f"<style>{CSS}</style></head><body>{body}</body></html>")
+            f"<style>{CSS}</style></head><body class='{body_class}'{st}>{body}</body></html>")
 
 
 def to_pdf(html_path: Path, pdf_path: Path) -> None:
@@ -218,10 +244,30 @@ def render(src: Path) -> None:
     if bad:
         sys.exit(f"STOP: numbers not found in your resume facts: {', '.join(bad)} — fix {src.name} or add the fact to resume_master.md")
     out = src.parent.resolve()
-    (out / "cv.html").write_text(cv_html(cv), encoding="utf-8")
-    to_pdf(out / "cv.html", out / "cv.pdf")
-    n = pdf_pages(out / "cv.pdf")
-    print(f"CV: {out / 'cv.pdf'} ({n} page{'s' if n > 1 else ''})" + ("  <- WARNING: trim bullets to fit 1 page" if n > 1 else ""))
+    def attempt(density: str, stretch: float | None = None) -> int:
+        (out / "cv.html").write_text(cv_html(cv, density, stretch), encoding="utf-8")
+        to_pdf(out / "cv.html", out / "cv.pdf")
+        return pdf_pages(out / "cv.pdf")
+
+    # The roomiest spacing that fits on one page. If airy fits with a bottom margin, stretch it to fill the page.
+    stretch = None
+    for density in DENSITIES:
+        n = attempt(density)
+        if n == 1:
+            break
+    if n == 1 and density == "airy" and attempt("airy", 1.0) == 1:
+        lo, hi = 1.0, MAX_STRETCH
+        for _ in range(6):                      # ~1% precision on the gaps
+            mid = (lo + hi) / 2
+            lo, hi = (mid, hi) if attempt("airy", mid) == 1 else (lo, mid)
+        stretch = lo
+    if stretch is not None:
+        attempt("airy", stretch)                # leave the best one on disk
+    elif n == 1 and density == "airy":
+        attempt("airy")
+    label = f"airy spacing, filled to the page (x{stretch:.2f})" if stretch else f"{density} spacing"
+    print(f"CV: {out / 'cv.pdf'} ({n} page{'s' if n > 1 else ''}, {label})"
+          + ("  <- WARNING: trim bullets to fit 1 page" if n > 1 else ""))
     letter = None
     if cv.get("cover_letter"):
         (out / "cover_letter.html").write_text(letter_html(cv), encoding="utf-8")
