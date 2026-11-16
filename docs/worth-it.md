@@ -33,7 +33,12 @@ All of these numbers live in [`finances.toml`](../profile-template/finances.toml
 | `python scripts/viability.py --city Zurich --salary 125000` | "What if I earned 125k in Zurich?" |
 | `python scripts/viability.py --job 42` | Check one job |
 | `python scripts/viability.py --top 40` | Check the 40 best jobs (results appear in the dashboard's **Saves / month** column) |
+| `python scripts/viability.py --min-score 70` | Check every job scoring 70 or more, whatever its status |
 | `python scripts/score_jobs.py --queue 15 --viability` | Only queue jobs that beat your current savings |
+
+You don't have to run anything for the **Saves / month** column: every time jobs are scored
+(`score_jobs.py`, so also the daily run), it is filled in for all jobs scoring **70 or more**, in any status.
+Jobs whose city isn't in `finances.toml` (for example "Remote Europe") stay empty.
 
 Or with Claude: *"is job 42 worth it?"*, *"compare Zurich and Toronto"*, *"queue jobs with the money filter"*.
 Claude can also look up a company's real salaries online and save them for a job.

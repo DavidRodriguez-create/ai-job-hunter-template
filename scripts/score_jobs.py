@@ -420,6 +420,12 @@ def main():
     if todo:
         print(f"Scored {len(todo)} jobs.")
 
+    # fill in the "Saves / month" estimate for every good match (any status), when finances.toml exists
+    if (ROOT / "profile" / "finances.toml").exists():
+        import viability
+        n = viability.fill(conn)
+        print(f"Savings estimate updated for {n} jobs scoring {viability.AUTO_MIN_SCORE}+.")
+
     if args.queue:
         # best first, max 2 per company so one employer doesn't fill the batch
         picked, per_co, too_low = [], {}, 0

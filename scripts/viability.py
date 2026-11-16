@@ -5,6 +5,7 @@
     python scripts/viability.py --job 42                  # one job (uses posted salary, else estimate)
     python scripts/viability.py --queued                   # all queued/approved jobs, saves result in DB
     python scripts/viability.py --top 40                   # best 40 scored jobs, saves result in DB
+    python scripts/viability.py --min-score 70             # every job scoring 70+, any status, saves result in DB
     python scripts/viability.py --set-salary 42 82000 EUR --source "levels.fyi, ExampleCorp, Munich"
 
 Model: monthly savings in your home currency ([me] home_currency) =
@@ -209,6 +210,18 @@ def save(conn, job_id: int, r: dict | None):
     conn.execute("UPDATE jobs SET viability_eur_month=? WHERE id=?", (round(r["savings_eur"]) if r else None, job_id))
 
 
+AUTO_MIN_SCORE = 70  # score_jobs.py fills in savings for every job at or above this score
+
+
+def fill(conn, min_score: float = AUTO_MIN_SCORE) -> int:
+    """Save the monthly savings of every job scoring min_score or more, whatever its status. Returns the count."""
+    rows = conn.execute("SELECT * FROM jobs WHERE score >= ?", (min_score,)).fetchall()
+    for j in rows:
+        save(conn, j["id"], evaluate(dict(j)))
+    conn.commit()
+    return len(rows)
+
+
 def run_jobs(conn, rows):
     base = baseline()
     min_gain = MIN_GAIN
@@ -236,6 +249,7 @@ def main():
     ap.add_argument("--job", type=int)
     ap.add_argument("--queued", action="store_true")
     ap.add_argument("--top", type=int)
+    ap.add_argument("--min-score", type=float, help="every job with at least this score, any status")
     ap.add_argument("--set-salary", nargs=3, metavar=("JOB_ID", "AMOUNT", "CURRENCY"))
     ap.add_argument("--source", default="manual")
     args = ap.parse_args()
@@ -266,6 +280,8 @@ def main():
     elif args.top:
         rows = conn.execute("SELECT * FROM jobs WHERE status IN ('scored','queued','approved') "
                             "ORDER BY score DESC LIMIT ?", (args.top,)).fetchall()
+    elif args.min_score is not None:
+        rows = conn.execute("SELECT * FROM jobs WHERE score >= ? ORDER BY score DESC", (args.min_score,)).fetchall()
     else:
         ap.print_help()
         return

@@ -20,10 +20,10 @@ scripts/
   setup.py               creates profile/ from profile-template/ (never overwrites)
   db.py                  SQLite schema + helpers           python scripts/db.py init | stats | status <id> <status> [note]
   fetch_jobs.py          job boards → DB                   --only <name> · --probe · --all-locations · --workers N
-  score_jobs.py          fit score + queue                 --show N · --queue N · --min-score 60 · --explain <id> · --rescore · --viability
+  score_jobs.py          fit score + queue                 --show N · --queue N · --min-score 60 · --explain <id> · --rescore · --viability   (also fills savings for 70+)
   render_cv.py           tailor.json → cv.pdf (+ letter)   <path/to/tailor.json> · --base
   dashboard.py/.html     local stats UI                    --port 8765 · --no-open
-  viability.py           salary vs cost of living          --compare · --city X --salary N · --job <id> · --queued · --top N
+  viability.py           salary vs cost of living          --compare · --city X --salary N · --job <id> · --queued · --top N · --min-score N
                                                            --set-salary <id> <amount> <CUR> --source "..."
   daily.py               fetch + score + queue + forms     --queue N · --viability   (defaults from [autopilot])
   check_forms.py         form check per queued/approved    --recheck   (Greenhouse questions via public API)
