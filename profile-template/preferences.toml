@@ -64,6 +64,7 @@ tier1 = ["Netherlands", "Germany", "Ireland"]
 tier2 = ["United Kingdom", "Denmark", "Sweden"]
 remote = "accept"                     # accept | prefer | reject
 also_current = []                     # your current country, only if a job clearly beats your current one
+tier2_cities = []                     # optional: cities that score like tier 2 although their country is lower, e.g. ["Paris"]
 
 [visa]
 # Countries where you can ALREADY work without a visa (your citizenship / residence permits).

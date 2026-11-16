@@ -28,6 +28,19 @@ tier1 = ["Switzerland", "Norway", "United States", "Canada", "Japan"]
 If you can already work there without a visa, also add it to `work_without_visa` under `[visa]`.
 Supported country names are listed in [find jobs](find-jobs.md#countries).
 
+**Rate one city higher than its country.** For example, your country is in `also_current` but its capital
+pays much better. Add the city to `tier1_cities` or `tier2_cities` (the country must still be listed somewhere):
+```toml
+tier2_cities = ["Paris"]
+```
+
+**Teach it another name for a skill.** "JVM" already counts as Java, "K8s" as Kubernetes, "Golang" as Go.
+Add your own under `[stack.aliases]`:
+```toml
+[stack.aliases]
+Spark = ["Databricks Runtime"]
+```
+
 **Say which languages you speak.** In `preferences.toml`: `languages_spoken = ["English", "Spanish"]`.
 Jobs that require another language get a lower score.
 

@@ -37,7 +37,31 @@ def words_rx(words):
 
 CORE = PREFS["stack"]["core"]
 STRETCH = PREFS["stack"].get("stretch", [])
-CORE_RX, STRETCH_RX = words_rx(CORE), words_rx(STRETCH)
+# Other names a posting uses for the same skill ("JVM ecosystem" = Java). Add your own in
+# preferences.toml: [stack.aliases]  Spark = ["PySpark"]
+ALIASES = {"Java": ["JVM", "JDK"], "Kubernetes": ["K8s"], "Spark": ["PySpark", "Spark SQL"],
+           "Go": ["Golang"], "AWS": ["Amazon Web Services"], "GCP": ["Google Cloud"]}
+for _k, _v in PREFS["stack"].get("aliases", {}).items():
+    ALIASES[_k] = ALIASES.get(_k, []) + list(_v)
+_CANON = {a.lower(): k.lower() for k, v in ALIASES.items() for a in v}
+
+
+def skills_rx(words):
+    """Regex for these skills plus their aliases; canon() maps a match back to the skill name."""
+    have = {w.lower() for w in words}
+    return words_rx(list(words) + [a for k, v in ALIASES.items() if k.lower() in have for a in v])
+
+
+def city_in(cities: list[str], location: str) -> bool:
+    """[locations] tier1_cities / tier2_cities: one city scores higher than the rest of its country."""
+    return bool(cities) and bool(words_rx(cities).search(location))
+
+
+def canon(match: str) -> str:
+    return _CANON.get(match.lower(), match.lower())
+
+
+CORE_RX, STRETCH_RX = skills_rx(CORE), skills_rx(STRETCH)
 
 TITLE_BEST = words_rx(["backend", "back-end", "back end", "data", "platform", "streaming", "distributed",
                        "infrastructure", "Java", "Scala", "Kafka", "Spark", "payments", "payment", "fintech",
@@ -120,6 +144,12 @@ YEARS_NOT = re.compile(r"years? (of|in) (service|tenure|age|business|operation|g
                        r"anniversary|sabbatical|founded|vesting|growing for", re.I)
 
 
+# The posting itself says the years aren't a hard cut.
+SOFT_YEARS = re.compile(r"\bfrom (junior|mid)[- ]?(level)?\s*(to|-|–)\s*(senior|staff|principal|lead)|"
+                        r"\bmid[- ]to[- ](senior|staff)|\bwhether you have a few years|\ball (seniority |experience )?levels\b|"
+                        r"not a (hard|strict) (requirement|cut)", re.I)
+
+
 SENTENCES = re.compile(r"\n|;|•|\.\s")  # "Node.js" and "U.S." stay whole
 
 
@@ -192,9 +222,9 @@ def score(job: dict) -> tuple[float, str]:
     reasons = []
 
     # stack (40): a core skill counts fully where the job asks for it; only in a nice-to-have, like a stretch skill
-    core = sorted({m.lower() for m in CORE_RX.findall(main_text)})
-    core_side = sorted({m.lower() for m in CORE_RX.findall(side_text)} - set(core))
-    stretch = sorted({m.lower() for m in STRETCH_RX.findall(main_text + "\n" + side_text)})
+    core = sorted({canon(m) for m in CORE_RX.findall(main_text)})
+    core_side = sorted({canon(m) for m in CORE_RX.findall(side_text)} - set(core))
+    stretch = sorted({canon(m) for m in STRETCH_RX.findall(main_text + "\n" + side_text)} - set(core) - set(core_side))
     s_stack = min(32, 8 * len(core)) + min(8, 2 * (len(stretch) + len(core_side)))
     if core or stretch or core_side:
         reasons.append("stack: " + ", ".join(core + [f"~{s}" for s in core_side] + [f"+{s}" for s in stretch]))
@@ -212,25 +242,29 @@ def score(job: dict) -> tuple[float, str]:
 
     # experience (15): full marks only when you already have the years asked for
     need = required_years(f"{sec['req']}\n{sec['other']}")
+    flexible = need is not None and MY_YEARS < need <= MY_YEARS + 2 and bool(SOFT_YEARS.search(desc))
     if need is None:
         s_exp = 9 if re.search(r"\bsenior\b", title, re.I) else 10
     elif need <= MY_YEARS:
         s_exp = 15
+    elif flexible:   # "5+ years ... we hire from mid to staff level": the number isn't a hard cut
+        s_exp = 12
     elif need == MY_YEARS + 1:
         s_exp = 8
     elif need <= MY_YEARS + 3:
         s_exp = 3
     else:
         s_exp = 0
-    reasons.append(f"exp: {need}+ yrs" if need else "exp: not stated")
+    reasons.append((f"exp: {need}+ yrs" + (" (flexible)" if flexible else "")) if need else "exp: not stated")
 
     # location (15)
     c = job["country"]
-    if c in LOC.get("tier1", []):
+    place = job.get("location") or ""
+    if c in LOC.get("tier1", []) or city_in(LOC.get("tier1_cities", []), place):
         s_loc = 15
     elif c == "Remote-Europe":
         s_loc = 12
-    elif c in LOC.get("tier2", []):
+    elif c in LOC.get("tier2", []) or city_in(LOC.get("tier2_cities", []), place):
         s_loc = 11
     elif c == "Remote-Global":
         s_loc = 10
@@ -238,7 +272,8 @@ def score(job: dict) -> tuple[float, str]:
         s_loc = 6
     else:
         s_loc = 3
-    reasons.append(f"loc: {c}")
+    city = next((x for x in LOC.get("tier1_cities", []) + LOC.get("tier2_cities", []) if city_in([x], place)), None)
+    reasons.append(f"loc: {c}" + (f" ({city})" if city else ""))
 
     # visa (10)
     no_sponsor = False
@@ -338,6 +373,10 @@ def self_test():
     assert role_key("X", "Software Engineer (Auth0)") != role_key("X", "Software Engineer")
     s = sections("About the role\nBuild things with Kafka.\nRequirements:\n5+ years Java\nNice to have\nFlink\n")
     assert "Java" in s["req"] and "Flink" in s["nice"] and "Kafka" in s["other"], s
+    if "java" in {c.lower() for c in CORE}:
+        assert "java" in {canon(m) for m in CORE_RX.findall("modern tools from the JVM ecosystem")}
+    assert SOFT_YEARS.search("We are hiring from mid to staff level, so whether you have a few years")
+    assert not SOFT_YEARS.search("At least 5 years of experience in software engineering.")
     s = sections("You have:\nJava\nNice to have: Kafka and Flink\n")
     assert "Kafka" in s["nice"] and "Kafka" not in s["req"], s
     print(f"self-test passed (languages you use: {', '.join(sorted(KNOWN_LANGS)) or 'none listed'})")
