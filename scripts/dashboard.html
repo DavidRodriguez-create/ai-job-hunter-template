@@ -452,8 +452,8 @@ async function loadToday() {
   $("approve-ready").textContent = LISTED_IDS.length ? `Approve all listed (${LISTED_IDS.length})` : "Approve all listed";
   $("today-chips").replaceChildren(
     el("span", { class: "chip" }, el("b", { text: listed.length }), " listed to apply"),
-    el("span", { class: "chip", title: "Approved: Claude is writing the tailored CV, or sending it now" },
-      el("b", { text: moving.length }), " in progress"),
+    el("span", { class: "chip", title: "Approved by you. The tailored CV is written in the next run (13:00 batch or Apply now), then sent after your reply" },
+      el("b", { text: moving.length }), " approved"),
     el("span", { class: "chip good", title: "CV ready, sent in the next application batch" },
       el("b", { text: ready.length }), ` queued · next batch ${when}`),
     el("span", { class: "chip" + (manual.length ? " warn" : "") }, el("b", { text: manual.length }), " need manual action"),
@@ -493,10 +493,11 @@ async function loadToday() {
           onclick: () => postStatus([j.id], "approved") }),
         el("button", { class: "btn-no", text: "Skip", title: "Not interested: hides it", onclick: () => postStatus([j.id], "skipped") }));
     } else {
-      const label = { preparing: "In progress · writing CV", sending: "In progress · sending",
+      const label = { preparing: "Approved", sending: "Sending now",
         ready: `Queued · next batch ${when}`, manual: "Needs manual action" }[j.state];
+      const tip = { preparing: "Its tailored CV is written in the next run (13:00 batch or Apply now), then it's sent after your reply" }[j.state];
       acts = el("div", { class: "row" },
-        el("span", { class: "state " + j.state, text: label }),
+        el("span", { class: "state " + j.state, text: label, ...(tip ? { title: tip } : {}) }),
         j.state === "sending" ? "" : el("button", { class: "linkbtn", text: "undo", title: "Back to the list (not approved)",
           onclick: () => postStatus([j.id], "queued") }));
     }

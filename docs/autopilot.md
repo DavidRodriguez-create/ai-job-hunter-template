@@ -75,7 +75,7 @@ The Today panel and the 13:00 message tell you exactly what's missing:
 
 | Message | What to do |
 |---|---|
-| **In progress · writing CV** | Nothing. It's written in the next run (morning or batch), before sending. |
+| **Approved** | Nothing. Its CV is written in the next run (morning or batch), before sending. |
 | **your salary expectation for *country*** | Only shows if you haven't set `expectation_text` ([above](#salary-and-postal-code-questions)). Tell Claude once and it's saved. |
 | **your postal code** | Tell Claude once. |
 | **needs login** | The company uses a portal with accounts (Workday, Taleo…). Apply to that one yourself, or with Claude while you're there to log in. |

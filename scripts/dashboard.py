@@ -173,7 +173,7 @@ def jobs(conn, q: dict) -> dict:
 def job_state(r, problems: list[str], sending: set[int]) -> tuple[str, str]:
     """(state, detail) of a job in the Today list.
     listed = queued, waiting for the user's Approve. Approving starts the application:
-    preparing (CV being written) -> ready (waits for the next batch) -> sending -> applied (leaves the list).
+    preparing (approved, CV not written yet) -> ready (waits for the next batch) -> sending -> applied (leaves the list).
     manual = something only the user can fix (login, missing answer, or the last attempt failed)."""
     import apply_batch
     if r["status"] == "queued":
@@ -184,7 +184,7 @@ def job_state(r, problems: list[str], sending: set[int]) -> tuple[str, str]:
     if problems or failed:
         return "manual", " · ".join(problems + ([f"last try failed: {failed}"] if failed else []))
     if not r["cv_path"]:
-        return "preparing", "writing the tailored CV"
+        return "preparing", "approved; CV written in the next run"
     return "ready", "waiting for the next batch"
 
 

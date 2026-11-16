@@ -17,14 +17,14 @@ Everything waiting for you, in one list: the jobs **listed to apply** (queued) a
 - Buttons: **Find new jobs** searches right now (fetch, score, list the best; a few minutes).
   **Apply now** shows how to send the ready ones now instead of at the next batch.
   **Approve all listed** approves every listed job with nothing missing.
-- Counters: **listed to apply**, **in progress**, **queued · next batch** (with the day and time), **need manual action**, **applied today**.
+- Counters: **listed to apply**, **approved**, **queued · next batch** (with the day and time), **need manual action**, **applied today**.
 - Listed jobs have **Approve** and **Skip**. Approving starts the application, and the buttons turn into its state:
 
   | State | Meaning |
   |---|---|
-  | **In progress · writing CV** | Claude writes the tailored CV in the next run. |
+  | **Approved** | You approved it. Its tailored CV isn't written yet: that happens in the next run (13:00 batch, or **Apply now**). |
   | **Queued · next batch …** | Ready. Sent in the next batch, after your "send all". |
-  | **In progress · sending** | Being sent right now. |
+  | **Sending now** | Being sent right now. |
   | **Needs manual action** | A login, a missing answer, or the last try failed (e.g. CAPTCHA). The orange line says which. |
 
   **undo** puts it back in the list. Once sent, a job leaves Today; find it under **Jobs** with status *applied*.
