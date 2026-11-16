@@ -604,15 +604,20 @@ async function postStatus(ids, status) {
   await refreshAll();
 }
 
-// When the next application batch runs: the next weekday at apply_time ("13:00"), in this computer's time.
-function nextBatch(hhmm) {
-  const [h, m] = (hhmm || "13:00").split(":").map(Number);
-  const now = new Date(), t = new Date(now);
-  t.setHours(h, m || 0, 0, 0);
-  while (t <= now || t.getDay() === 0 || t.getDay() === 6) { t.setDate(t.getDate() + 1); t.setHours(h, m || 0, 0, 0); }
-  const days = Math.round((new Date(t).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / 864e5);
-  const day = days === 0 ? "today" : days === 1 ? "tomorrow" : t.toLocaleDateString("en-GB", { weekday: "short" });
-  return `${day} ${hhmm}`;
+// When the next application batch runs: the soonest weekday slot among apply_time (["13:00", "18:00"]),
+// in this computer's time.
+function nextBatch(times) {
+  const now = new Date();
+  let best = null, bestHhmm = "";
+  for (const hhmm of (times && times.length ? times : ["13:00"])) {
+    const [h, m] = hhmm.split(":").map(Number), t = new Date(now);
+    t.setHours(h, m || 0, 0, 0);
+    while (t <= now || t.getDay() === 0 || t.getDay() === 6) { t.setDate(t.getDate() + 1); t.setHours(h, m || 0, 0, 0); }
+    if (!best || t < best) { best = t; bestHhmm = hhmm; }
+  }
+  const days = Math.round((new Date(best).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / 864e5);
+  const day = days === 0 ? "today" : days === 1 ? "tomorrow" : best.toLocaleDateString("en-GB", { weekday: "short" });
+  return `${day} ${bestHhmm}`;
 }
 
 // Order in the list: what needs you first, then what to choose from, then what's moving on its own.
@@ -621,7 +626,8 @@ let LISTED_IDS = [], wasSearching = false, pollTimer = null;
 async function loadToday() {
   const d = await (await fetch("/api/today")).json();
   const a = d.autopilot, when = d.running_since ? "sending now" : nextBatch(a.apply_time);
-  $("autopilot").textContent = `Autopilot: new jobs weekdays 08:00 · applications ${a.apply_time} · ` +
+  $("autopilot").textContent = `Autopilot: new jobs weekdays ${a.search_time.join(" + ")} · ` +
+    `applications ${a.apply_time.join(" + ")} · ` +
     `batch = ${a.apply_include.length > 1 ? "approved (listed ones only when nothing is approved)" : a.apply_include[0]}, ` +
     `up to ${a.max_per_batch} each · worth-it filter ${a.worth_it_filter ? "ON" : "off"}`;
   const by = (s) => d.waiting.filter((j) => j.state === s);
@@ -691,7 +697,7 @@ async function loadToday() {
   }
   $("today-hint").textContent =
     `Approve a job to start its application: Claude writes its tailored CV, then it goes in the next batch ` +
-    `(weekdays ${a.apply_time}, or press Apply now). You get the list in Claude and reply "send all" ` +
+    `(weekdays ${a.apply_time.join(" and ")}, or press Apply now). You get the list in Claude and reply "send all" ` +
     `(or "send all except …"). Nothing is sent before your reply. Applied jobs leave this list; find them under Jobs.`;
 }
 

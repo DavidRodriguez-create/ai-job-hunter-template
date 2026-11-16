@@ -175,6 +175,12 @@ def jobs(conn, q: dict) -> dict:
             "rows": rows(conn, sql, [*args, per, (page - 1) * per])}
 
 
+def times(value) -> list[str]:
+    """A schedule time from [autopilot]: "13:00", ["13:00", "18:00"] or "13:00, 18:00" -> a sorted list."""
+    parts = value if isinstance(value, list) else str(value).split(",")
+    return sorted(p.strip() for p in parts if str(p).strip())
+
+
 def job_state(r, problems: list[str], sending: set[int]) -> tuple[str, str]:
     """(state, detail) of a job in the Today list.
     listed = queued, waiting for the user's Approve. Approving starts the application:
@@ -256,7 +262,8 @@ def today(conn) -> dict:
     return {
         "autopilot": {"queue_per_day": auto.get("queue_per_day", 15), "worth_it_filter": bool(auto.get("worth_it_filter")),
                       "apply_include": apply_batch.INCLUDE, "include_now": include, "max_per_batch": apply_batch.MAX_PER_BATCH,
-                      "apply_time": auto.get("apply_time", "13:00")},
+                      "apply_time": times(auto.get("apply_time", "13:00")),
+                      "search_time": times(auto.get("search_time", "08:00"))},
         "running_since": held["started"] if held else None,
         "search": search_status(),
         "applied_today": apply_batch.applied_today(conn),

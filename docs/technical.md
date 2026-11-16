@@ -50,6 +50,10 @@ Every change is logged in the `events` table (powers the dashboard's activity ch
 | Lever | `api.lever.co/v0/postings/<slug>?mode=json` |
 | Ashby | `api.ashbyhq.com/posting-api/job-board/<slug>?includeCompensation=true` |
 | SmartRecruiters | `api.smartrecruiters.com/v1/companies/<slug>/postings` |
+| Workday | `POST <tenant>.wd<N>.myworkdayjobs.com/wday/cxs/<tenant>/<site>/jobs`: one search per target country (the country facet is found per site), then `GET …/<site><externalPath>` for each new job's description (at most 60 per company per run; new jobs without a description wait for the next run, since jobs are scored once). Workday refuses a random share of requests with 429, so requests are retried. |
+| Amazon | `www.amazon.jobs/en/search.json?normalized_country_code[]=<ISO3>&category[]=<slug>` |
+| Jibe | `<host>/api/jobs?page=<n>&limit=100` |
+| Eightfold | `<host>/api/pcsx/search?domain=<domain>&location=<country>&start=<n>&num=10&filter_<k>=<v>`, then `/api/pcsx/position_details?position_id=<id>` for new jobs (same 60-per-run limit; 1 s between requests, since the site slows down or cuts off fast clients) |
 | FX rates | `ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml` (cached daily in `data/fx.json`) |
 
 ## Dashboard security

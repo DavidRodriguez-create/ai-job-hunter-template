@@ -1,6 +1,6 @@
 ---
 name: job-hunt-autopilot
-description: Set up, check or change the job-hunt autopilot, which is the two weekday schedules (08:00 morning run, 13:00 application batch) and the [autopilot] settings. Use when the user says "set up autopilot", "/job-hunt-autopilot", "is autopilot on?", "change the autopilot times", "turn the worth-it filter on/off", "pause autopilot", or asks when the next run is. Always ends with the dashboard link.
+description: Set up, check or change the job-hunt autopilot, which is the two weekday schedules (morning run at 08:00 and 15:00, application batch at 13:00 and 18:00) and the [autopilot] settings. Use when the user says "set up autopilot", "/job-hunt-autopilot", "is autopilot on?", "change the autopilot times", "turn the worth-it filter on/off", "pause autopilot", or asks when the next run is. Always ends with the dashboard link.
 ---
 
 # Job-hunt autopilot
@@ -31,15 +31,15 @@ Every answer ends with **the dashboard link** (see the last section).
 2. **Ask once** (one question each, current value as the default):
    - Worth-it filter on or off? (`worth_it_filter`)
    - Which jobs go into the batch: approved + queued, or approved only? (`apply_include`)
-   - Keep the times at 08:00 and 13:00 on weekdays?
+   - Keep the times (new jobs 08:00 + 15:00, applications 13:00 + 18:00, weekdays)?
    Save the answers in `[autopilot]`.
 3. **Create or update** the two scheduled tasks with `list_scheduled_tasks` first. If a task with the same id
    already exists, update it instead of making a duplicate. Each prompt must be self-contained and use the absolute project path:
-   - `daily-job-hunt`, cron `0 8 * * 1-5`: "In <project path>, read CLAUDE.md (if present) and
+   - `daily-job-hunt`, cron `0 8,15 * * 1-5`: "In <project path>, read CLAUDE.md (if present) and
      .claude/skills/job-hunt/SKILL.md and do the **Morning run** and **Tailoring one job** sections exactly.
      Never apply, never approve, never change profile/ files. End with the summary, then the dashboard link
      (start the dashboard first if it isn't running, see the skill), and a one-line notification if a notification tool is available."
-   - `daily-applications`, cron `0 13 * * 1-5`: "In <project path>, read .claude/skills/job-hunt/SKILL.md and do
+   - `daily-applications`, cron `0 13,18 * * 1-5`: "In <project path>, read .claude/skills/job-hunt/SKILL.md and do
      the **Daily application batch** section exactly. Submit nothing until the user replies in this conversation
      ('send all' / 'send 1-5' / 'send all except 3'). Always finish with `apply_batch.py --release`, the summary
      and the dashboard link."
@@ -55,7 +55,7 @@ settings and `python scripts/apply_batch.py --status`. List the last runs if ask
 
 ## Change
 - Times: `update_scheduled_task` with the new cron. Weekdays only unless the user asks otherwise.
-  Also update `apply_time` in `[autopilot]`, which is for information only.
+  Also update `search_time` / `apply_time` in `[autopilot]` (lists like `["13:00", "18:00"]`), which the dashboard shows; they don't change the schedule.
 - Settings: edit `[autopilot]` in `profile/preferences.toml`. They take effect at the next run, and the task prompts don't need changing.
 
 ## Dashboard link (end of every answer)

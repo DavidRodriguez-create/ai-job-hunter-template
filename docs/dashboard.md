@@ -33,7 +33,7 @@ Everything waiting for you, in one list: the jobs **listed to apply** (queued) a
 
   | State | Meaning |
   |---|---|
-  | **Approved** | You approved it. Its tailored CV isn't written yet: that happens in the next run (13:00 batch, or **Apply now**). |
+  | **Approved** | You approved it. Its tailored CV isn't written yet: that happens in the next run (13:00 or 18:00 batch, or **Apply now**). |
   | **Queued · next batch …** | Ready. Sent in the next batch, after your "send all". |
   | **Sending now** | Being sent right now. |
   | **Needs manual action** | A login, a missing answer, or the last try failed (e.g. CAPTCHA). The orange line says which. |

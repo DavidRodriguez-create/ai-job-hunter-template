@@ -1,5 +1,9 @@
-# Companies to watch. Each needs the ATS ("greenhouse" | "lever" | "ashby" | "smartrecruiters")
-# and the board slug (the part after the domain in their careers URL).
+# Companies to watch. Each needs the ATS ("greenhouse" | "lever" | "ashby" | "smartrecruiters" |
+# "workday" | "amazon" | "jibe" | "eightfold") and the board slug (the part after the domain in their careers URL).
+# workday: slug = the whole careers URL, e.g. "https://acme.wd5.myworkdayjobs.com/External"
+# amazon:  slug = job categories, e.g. "software-development" (or "all"); jibe: slug = the careers site host
+# eightfold: slug = the careers search URL with domain and filters (see docs/find-jobs.md#add-a-company)
+# Workday, Amazon, Jibe and Eightfold sites need an account to apply: see docs/apply.md#company-portals.
 # Check new entries with:  python scripts/fetch_jobs.py --probe --only <name>
 # Set enabled = false to pause one.
 
@@ -403,3 +407,40 @@ slug = "supabase"
 name = "Linear"
 ats = "ashby"
 slug = "linear"
+
+# --- Big tech on their own portals (an account per company to apply: docs/apply.md#company-portals)
+[[company]]
+name = "NVIDIA"
+ats = "workday"
+slug = "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite"
+
+[[company]]
+name = "Intel"
+ats = "workday"
+slug = "https://intel.wd1.myworkdayjobs.com/External"
+
+[[company]]
+name = "AMD"
+ats = "jibe"
+slug = "careers.amd.com"
+
+[[company]]
+name = "Amazon"            # includes AWS: its jobs are on amazon.jobs too
+ats = "amazon"
+slug = "software-development"
+
+[[company]]
+name = "Microsoft"
+ats = "eightfold"
+slug = "https://apply.careers.microsoft.com/careers?domain=microsoft.com&profession=software engineering"
+
+[[company]]
+name = "Nintendo"
+ats = "greenhouse"
+slug = "nintendo"
+
+[[company]]
+name = "SpaceX"
+ats = "greenhouse"
+slug = "spacex"
+# Most SpaceX roles are US-only under export rules (US citizen / green card): expect few you can take.

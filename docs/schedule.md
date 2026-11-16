@@ -6,8 +6,8 @@ Two schedules run on weekdays. Together they're the [autopilot](autopilot.md).
 
 | Schedule | Time | What it does |
 |---|---|---|
-| **Daily job hunt** | 08:00 | Finds and scores new jobs, queues the best ones, writes a tailored CV and cover letter for each, checks every application form. **Never applies.** |
-| **Daily applications** | 13:00 | Prepares today's batch, notifies you, and sends what you confirm with one reply. Its **Run now** button is your "Send" button. |
+| **Daily job hunt** | 08:00 and 15:00 | Finds and scores new jobs, queues the best ones, writes a tailored CV and cover letter for each, checks every application form. **Never applies.** |
+| **Daily applications** | 13:00 and 18:00 | Prepares a batch, notifies you, and sends what you confirm with one reply. Its **Run now** button is your "Send" button. |
 
 ## Set them up
 

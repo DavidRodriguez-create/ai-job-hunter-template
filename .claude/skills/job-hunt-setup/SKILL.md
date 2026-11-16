@@ -58,8 +58,8 @@ Country names must match the ones in `scripts/fetch_jobs.py` → `COUNTRY_HINTS`
 
 ## Step 5: Companies
 `profile/companies.toml` already lists ~75 large tech companies. Ask if there are companies they especially want
-or never want (→ `blocklist` in preferences). To add one, find its public job board (Greenhouse, Lever, Ashby or
-SmartRecruiters) and check it: `python scripts/fetch_jobs.py --probe --only "<name>"`.
+or never want (→ `blocklist` in preferences). To add one, find its public job board (Greenhouse, Lever, Ashby,
+SmartRecruiters, Workday, Amazon, Jibe or Eightfold; table in docs/find-jobs.md#add-a-company) and check it: `python scripts/fetch_jobs.py --probe --only "<name>"`.
 If their field isn't software, suggest companies for their field and probe them.
 
 ## Step 6 (optional): "Is it worth it?" numbers

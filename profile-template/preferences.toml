@@ -87,7 +87,8 @@ max_age_days = 7                       # today's new jobs first; if they don't f
 worth_it_filter = false                # true = only queue jobs that are worth it money-wise (docs/worth-it.md)
 apply_include = ["approved", "queued"] # batch: approved jobs; the listed (queued) ones only when nothing is approved
 max_per_batch = 20                     # most applications one batch sends; the rest go in the next one
-apply_time = "13:00"                   # when the batch is prepared (weekdays); informational, set in the schedule
+apply_time = ["13:00", "18:00"]        # when the batches are prepared (weekdays); informational, set in the schedule
+search_time = ["08:00", "15:00"]       # when new jobs are searched (weekdays); informational, set in the schedule
 
 [notify]
 # OPTIONAL email summary, sent by your computer's scheduler (not by Claude). Setup: docs/email-notifications.md

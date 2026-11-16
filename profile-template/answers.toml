@@ -42,3 +42,9 @@ gender = "Prefer not to say"
 ethnicity = "Prefer not to say"
 veteran = "Prefer not to say"
 disability = "Prefer not to say"
+
+[portals]
+# Company careers portals (Workday, Amazon, iCIMS…) where you already have an account, by company name as in
+# companies.toml, e.g. ["NVIDIA", "Amazon"]. You create each account yourself, once, in Chrome; Claude never
+# types passwords. Jobs at these companies then go into the normal batch (see docs/apply.md#company-portals).
+accounts = []

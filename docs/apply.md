@@ -18,14 +18,14 @@ You need it only for applying; finding jobs, CVs and the dashboard work without 
 
 Good to know:
 - Only **Google Chrome** works (not Edge, Brave or other Chromium browsers), and not on phones.
-- Chrome must be **open** when applications are sent (e.g. at 13:00 with [autopilot](autopilot.md)).
+- Chrome must be **open** when applications are sent (e.g. at 13:00 and 18:00 with [autopilot](autopilot.md)).
 - Claude uses the tabs it opens; it never needs your passwords. Logins and CAPTCHAs are left to you.
 
 Official guide: [Get started with Claude in Chrome](https://support.claude.com/en/articles/12012173-get-started-with-claude-in-chrome).
 
 ## The easy way: one batch a day
 
-With [autopilot](autopilot.md), at 13:00 Claude prepares every waiting job (approved and queued, or only approved:
+With [autopilot](autopilot.md), at 13:00 and 18:00 Claude prepares every waiting job (approved and queued, or only approved:
 your choice) and shows you the list. You reply **"send all"** (or *"send 1-5"*, *"send all except 3"*), and it
 fills and submits them all. To send right away, tell Claude **"send my applications"**, or press **Run now** on
 *Daily applications* under **Scheduled** in the Claude app.
@@ -44,6 +44,20 @@ fills and submits them all. To send right away, tell Claude **"send my applicati
 The answers come from [`answers.toml`](../profile-template/answers.toml). Questions like *"Do you need visa sponsorship?"* are answered for each job's country: using the countries you listed in [`preferences.toml`](../profile-template/preferences.toml) under `[visa]` (where you can already work, and where you'd need sponsorship).
 
 If a form asks something new (like your salary expectation for a country), Claude asks you once and remembers it.
+
+## Company portals
+
+Workday companies (e.g. NVIDIA, Intel), Amazon, AMD and Microsoft only take applications through **an account on their own careers site**.
+Claude never creates accounts or types passwords, so:
+
+| Step | Who |
+|---|---|
+| 1. The first time a job there is approved, it shows **needs login**: *"your NVIDIA careers account"*. | — |
+| 2. Open that company's careers site in Chrome and create your account. Each company needs its own, even if they all use Workday. | You, once |
+| 3. Tell Claude *"I have an NVIDIA account"*. It adds the company to `[portals] accounts` in [`answers.toml`](../profile-template/answers.toml). | Claude |
+| 4. From then on, those jobs go into the normal batch. Be **signed in** in Chrome when the batch is sent; if the site asks you to sign in again, Claude stops and that job waits for you. | You: stay signed in |
+
+These forms are longer than Greenhouse or Lever ones (work history, education…). Some sites fill that in from your CV.
 
 ## Claude always stops and hands over to you for
 

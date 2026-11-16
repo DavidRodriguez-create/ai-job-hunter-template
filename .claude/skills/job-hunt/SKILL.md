@@ -75,7 +75,7 @@ Never apply it in the default daily run. Model + data: `profile/finances.toml`.
 - All tax/cost numbers are rough. For a real offer, point the user to the official calculators listed
   at the bottom of finances.toml.
 
-## Daily application batch ("send my applications", and the 13:00 scheduled run)
+## Daily application batch ("send my applications", and the 13:00 / 18:00 scheduled runs)
 Use **Claude in Chrome** (the user's own browser). The batch = approved jobs; if none is approved and `apply_include` has "queued", the queued ones.
 `--prepare` picks this by itself and says which in its first line.
 
@@ -87,7 +87,9 @@ Use **Claude in Chrome** (the user's own browser). The batch = approved jobs; if
 3. **NEED YOU FIRST** with "your …" items (salary expectation for a country, postal code) → ask the user once,
    save the answer in `profile/answers.toml` (`[salary] <country>_expectation`, `[identity] postal_code`),
    run `python scripts/check_forms.py --recheck`, then `--release` and `--prepare` again.
-   "needs a login" jobs stay for the user to do by hand; list them.
+   "your <Company> careers account" → the user creates the account in Chrome themselves (never you). When they say
+   they have it, add the company name to `[portals] accounts` in `profile/answers.toml`, then `check_forms.py --recheck`.
+   Until then those jobs wait; list them.
 
 **Answering salary and postal-code fields** (from the packet's `answers`):
 - Salary, **text field** → `salary_expectation` (the user's own sentence, no number) unless a per-country fixed
@@ -134,6 +136,8 @@ Use **Claude in Chrome** (the user's own browser, where they're logged in). One 
 
 Stop and hand over to the user, never work around:
 - Login / "create account" pages (Workday, iCIMS, Taleo…): the user creates accounts and types passwords themselves.
+  For companies in `[portals] accounts` the user is normally signed in already: fill the form. If the site asks to
+  sign in, stop that job (`--failed <id> "sign in to <Company> in Chrome"`) and move on.
 - CAPTCHAs or bot checks.
 - Questions you can't answer truthfully from the profile files (ask; don't guess).
 - Anything that looks like a payment, a test/assessment, or a third-party data-sharing consent beyond the
@@ -143,8 +147,8 @@ If a form can't be completed, set the job back to `queued` with a note, and move
 LinkedIn Easy Apply / Indeed: don't automate (their terms forbid bots, risk of account ban).
 
 ## Scheduled runs (docs/autopilot.md)
-- **Morning (weekdays 08:00)**: the morning run above. Never applies, never approves.
-- **Applications (weekdays 13:00)**: the daily application batch above. It prepares everything and asks;
+- **Morning (weekdays 08:00 and 15:00)**: the morning run above. Never applies, never approves.
+- **Applications (weekdays 13:00 and 18:00)**: the daily application batch above. It prepares everything and asks;
   it submits only what the user's reply in that session includes.
 
 Setting up, checking, pausing or changing these schedules: use the **job-hunt-autopilot** skill

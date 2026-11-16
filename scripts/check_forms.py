@@ -27,7 +27,11 @@ ANS = tomllib.loads((ROOT / "profile" / "answers.toml").read_text(encoding="utf-
 COMPANIES = tomllib.loads((ROOT / "profile" / "companies.toml").read_text(encoding="utf-8")).get("company", [])
 SLUG = {(c["name"], c["ats"]): c["slug"] for c in COMPANIES}
 LOGIN_PORTALS = re.compile(r"myworkdayjobs|workday|taleo|icims|successfactors|brassring|oraclecloud|"
-                           r"jobvite|avature|phenom|eightfold", re.I)
+                           r"jobvite|avature|phenom|eightfold|amazon\.jobs", re.I)
+LOGIN_SOURCES = {"workday", "amazon", "jibe", "eightfold"}  # sources whose apply forms always sit behind a company account
+# Companies whose careers portal you have an account on (you create it once, in Chrome). Their jobs then
+# go into the batch like the others: Claude applies while you're signed in, and never types a password.
+ACCOUNTS = {a.strip().lower() for a in ANS.get("portals", {}).get("accounts", [])}
 # Questions the standard answers already cover (matched on the question text)
 STANDARD = re.compile(r"first name|last name|^name|email|phone|resume|cv\b|cover letter|linkedin|github|website|"
                       r"portfolio|most recent (employer|company|job title)|current (company|employer|title)|"
@@ -66,8 +70,13 @@ def greenhouse_questions(job) -> list[dict] | None:
 def check(job) -> tuple[str, dict]:
     url = job["url"] or ""
     info = {"ats": job["source"], "questions": [], "to_draft": [], "missing": []}
-    if LOGIN_PORTALS.search(url):
+    if job["source"] in LOGIN_SOURCES or LOGIN_PORTALS.search(url):
+        if job["company"].lower() in ACCOUNTS:
+            info["login"] = f"signs in with your {job['company']} careers account (be signed in in Chrome)"
+            return "ready", info
         info["reason"] = "company portal that needs an account/login"
+        info["missing"].append(f"your {job['company']} careers account (create it once in Chrome, then tell Claude)")
+        info["save_as"] = {"account": "[portals] accounts"}
         return "needs_you", info
     if job["source"] == "greenhouse":
         qs = greenhouse_questions(job)

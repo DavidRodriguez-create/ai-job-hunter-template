@@ -5,7 +5,7 @@
 By default, [autopilot](autopilot.md) tells you about the daily batch with a **Claude app notification**
 (on your computer, and on your phone if you use the Claude mobile app). If you'd also like an **email**, set this up once.
 
-What you get, on weekdays after the 13:00 batch is prepared:
+What you get, on weekdays after each batch is prepared (13:00 and 18:00):
 
 > **Subject:** Job hunt: 9 application(s) ready to send
 > The list of jobs, anything that needs you, and how to send them ("open Claude → Daily applications → reply *send all*").
