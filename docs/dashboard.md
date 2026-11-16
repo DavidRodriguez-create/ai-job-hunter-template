@@ -35,7 +35,9 @@ Everything waiting for you, in one list: the jobs **listed to apply** (queued) a
 
 ## Jobs list (bottom of the page)
 
-Every job, with filters and sorting. Each page holds as many jobs as fit in your window, so the list never scrolls.
+Every job, with filters and sorting. By default each page holds as many jobs as fit in your window (**Fit window**),
+so the list never scrolls. To see more at once, pick **25**, **50**, **75** or **100 rows** in the menu at the top right.
+The page remembers your choice.
 The total number of jobs and the pages are at the top right: click a page number, or **‹** / **›** for the previous and next page.
 Changing a filter or the sorting goes back to page 1. Long titles are cut short: hover one to read it all.
 
