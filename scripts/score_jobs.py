@@ -9,6 +9,7 @@
 
 Points:  stack 40 · title 20 · experience 15 · location 15 · visa 10
 Penalties: spoken language up to -25 · programming language you don't use up to -25 · specialist domain -25
+           "Senior" title that doesn't closely match your CV: -8 per gap (role, core skills, years, language)
 "No sponsorship" where you need a visa caps the score at 40.
 Rules come from profile/preferences.toml ([stack], [scoring], [domains]); tweak weights here.
 """
@@ -69,6 +70,12 @@ TITLE_BEST = words_rx(["backend", "back-end", "back end", "data", "platform", "s
 TITLE_OK = words_rx(["software engineer", "software developer", "developer", "member of technical staff", "SRE",
                      "site reliability", "devops"])
 TITLE_WEAK = words_rx(["full stack", "full-stack", "fullstack", "machine learning", "ML", "AI", "research"])
+# Operations roles: "Software Engineer (SRE), Infrastructure" is an SRE job, not a strong backend/data title
+TITLE_OPS = words_rx(["SRE", "site reliability", "devops", "dev ops"])
+BACKEND_WORK = words_rx(["backend services", "backend systems", "back-end services", "backend engineering",
+                         "server-side", "distributed systems", "data pipelines", "event-driven"])
+SENIOR_RX = re.compile(r"\b(senior|sr\.?)(?![\w])", re.I)
+MID_RX = re.compile(r"\b(II|2|mid[- ]level|intermediate)\b(?!\s*\+|\s*years?)", re.I)
 
 SPONSOR_YES = re.compile(r"visa sponsorship (is )?(available|provided|offered)|(we|will|can) sponsor|"
                          r"sponsorship (is )?available|relocation (support|assistance|package)|support (your )?relocation", re.I)
@@ -139,8 +146,10 @@ def sections(desc: str) -> dict[str, str]:
 # "5+ years", "3-5 years", "more than 6 years", "at least 4 years", "minimum of 5 years"
 YEARS_RX = re.compile(r"\b(\d{1,2})\s*(?:\+|plus)?\s*(?:(?:-|–|to)\s*\d{1,2}\s*)?\+?\s*(?:years?|yrs)\b", re.I)
 YEARS_CONTEXT = re.compile(r"experien|background|track record|working (with|on|in)|building|developing|"
-                           r"professional|industry|in (software|backend|data|engineering)", re.I)
+                           r"professional|industry|in (software|backend|data|engineering)|"
+                           r"\b(years?|yrs)\s+(in|as)\s", re.I)   # "5+ years in SRE", "3 years as a backend engineer"
 YEARS_NOT = re.compile(r"years? (of|in) (service|tenure|age|business|operation|growth|history)|years? old|"
+                       r"years? (in|at) (the|our) (company|team|market)|"
                        r"anniversary|sabbatical|founded|vesting|growing for", re.I)
 
 
@@ -197,6 +206,28 @@ def missing_languages(text: str) -> dict[str, bool]:
     return missing
 
 
+# "Kotlin (or Java and willing to learn Kotlin)", "Java, Kotlin, or similar": the posting accepts a language you use
+ALT_RX = re.compile(r"\bor\b|such as|similar|willing to learn|e\.g\.", re.I)   # not "/": URLs are full of them
+
+
+def accepted_alternatives(text: str, missing: dict[str, bool]) -> dict[str, str]:
+    """Missing language -> a language you use that the posting offers instead, anywhere in it (also nice-to-have)."""
+    alt = {}
+    for sentence in SENTENCES.split(text):
+        langs = {PROG_LANGS[(a or b).lower()] for a, b in PROG_RX.findall(sentence)}
+        mine = sorted(langs & KNOWN_LANGS)
+        if mine and ALT_RX.search(sentence):
+            for l in langs & set(missing):
+                alt.setdefault(l, mine[0])
+    return alt
+
+
+# Core skill points: the first ones count most, so a short, focused posting ("Java, Kotlin") isn't buried
+# under postings that list ten tools.
+CORE_POINTS = [0, 12, 20, 26, 30]
+CORE_LANG_BONUS = 4   # one of your core skills is the job's programming language (Java, Scala…): the core of the fit
+
+
 def language_penalty(missing: dict[str, bool]) -> int:
     """Years of a language you don't use: 20. Otherwise 15, or 10 for one you're learning ([stack] stretch)."""
     return min(25, sum(20 if years else 10 if l in LEARNING_LANGS else 15 for l, years in missing.items()))
@@ -209,6 +240,24 @@ DOMAINS = {name: (words_rx(d["title"]) if d.get("title") else None,
 SCORING = PREFS.get("scoring", {})
 DOMAIN_PENALTY = int(SCORING.get("domain_penalty", 25))
 DOMAIN_MIN_KEYWORDS = int(SCORING.get("domain_min_keywords", 2))
+# A "Senior" job must match your CV closely: each check it fails costs senior_penalty points.
+SENIOR_PENALTY = int(SCORING.get("senior_penalty", 8))
+SENIOR_MIN_CORE = int(SCORING.get("senior_min_core", 3))
+
+
+def senior_gaps(title_tier: str, core: list[str], need: int | None, missing: dict) -> list[str]:
+    """What a senior job asks for that your CV doesn't clearly show. Empty = a close match.
+    (A specialist domain already has its own penalty, so it isn't counted again here.)"""
+    gaps = []
+    if not title_tier.startswith(("strong", "generic")):
+        gaps.append(f"{title_tier} role")
+    if len(core) < SENIOR_MIN_CORE:   # core skills anywhere in the posting (asked for, or in the team's stack)
+        gaps.append(f"only {len(core)} of your core skills")
+    if need is not None and need > MY_YEARS + 1:   # one year short is the usual step up, already costed in "exp"
+        gaps.append(f"{need}+ yrs")
+    if set(missing) - LEARNING_LANGS:   # a language you're learning ([stack] stretch) isn't a senior gap
+        gaps.append("a language you don't use")
+    return gaps
 
 
 def score(job: dict) -> tuple[float, str]:
@@ -224,14 +273,29 @@ def score(job: dict) -> tuple[float, str]:
     # stack (40): a core skill counts fully where the job asks for it; only in a nice-to-have, like a stretch skill
     core = sorted({canon(m) for m in CORE_RX.findall(main_text)})
     core_side = sorted({canon(m) for m in CORE_RX.findall(side_text)} - set(core))
+    # a required language you don't use, where the posting accepts one you do instead: no penalty, and yours counts fully
+    missing = missing_languages(main_text)
+    alternatives = accepted_alternatives(desc_nc, missing)
+    core_names = {x.lower() for x in CORE}
+    for l, mine in alternatives.items():
+        del missing[l]
+        if mine.lower() in core_names and mine.lower() not in core:
+            core = sorted(set(core) | {mine.lower()})
+            core_side = [x for x in core_side if x != mine.lower()]
     stretch = sorted({canon(m) for m in STRETCH_RX.findall(main_text + "\n" + side_text)} - set(core) - set(core_side))
-    s_stack = min(32, 8 * len(core)) + min(8, 2 * (len(stretch) + len(core_side)))
+    lang_bonus = CORE_LANG_BONUS if any(x in PROG_LANGS for x in core) else 0
+    s_stack = (min(32, CORE_POINTS[min(len(core), len(CORE_POINTS) - 1)] + lang_bonus)
+               + min(8, 2 * (len(stretch) + len(core_side))))
     if core or stretch or core_side:
         reasons.append("stack: " + ", ".join(core + [f"~{s}" for s in core_side] + [f"+{s}" for s in stretch]))
 
     # title (20)
-    if TITLE_BEST.search(title):
+    if TITLE_BEST.search(title) and not TITLE_OPS.search(title):
         s_title, t = 20, "strong"
+    elif TITLE_OPS.search(title):
+        s_title, t = 14, "ops"      # SRE / DevOps: same points as a generic title, but not your kind of senior role
+    elif TITLE_OK.search(title) and not TITLE_WEAK.search(title) and BACKEND_WORK.search(f"{sec['req']}\n{sec['other']}"):
+        s_title, t = 18, "generic, backend work"   # "Software Engineer II, Earnings" building backend services
     elif TITLE_OK.search(title):
         s_title, t = 14, "generic"
     elif TITLE_WEAK.search(title):
@@ -243,8 +307,8 @@ def score(job: dict) -> tuple[float, str]:
     # experience (15): full marks only when you already have the years asked for
     need = required_years(f"{sec['req']}\n{sec['other']}")
     flexible = need is not None and MY_YEARS < need <= MY_YEARS + 2 and bool(SOFT_YEARS.search(desc))
-    if need is None:
-        s_exp = 9 if re.search(r"\bsenior\b", title, re.I) else 10
+    if need is None:   # a mid-level title ("Software Engineer II") is what your years fit
+        s_exp = 9 if SENIOR_RX.search(title) else 13 if MID_RX.search(title) else 10
     elif need <= MY_YEARS:
         s_exp = 15
     elif flexible:   # "5+ years ... we hire from mid to staff level": the number isn't a hard cut
@@ -255,7 +319,8 @@ def score(job: dict) -> tuple[float, str]:
         s_exp = 3
     else:
         s_exp = 0
-    reasons.append((f"exp: {need}+ yrs" + (" (flexible)" if flexible else "")) if need else "exp: not stated")
+    reasons.append((f"exp: {need}+ yrs" + (" (flexible)" if flexible else "")) if need
+                   else "exp: mid-level title" if s_exp == 13 else "exp: not stated")
 
     # location (15)
     c = job["country"]
@@ -295,7 +360,8 @@ def score(job: dict) -> tuple[float, str]:
         reasons.append("needs " + "/".join(langs))
 
     # programming languages the job requires and you don't use (one you're learning costs less)
-    missing = missing_languages(f"{title}\n{sec['req']}\n{sec['other']}")
+    if alternatives:
+        reasons.append("accepts " + "/".join(sorted(set(alternatives.values()))) + " for " + "/".join(sorted(alternatives)))
     if missing:
         pen += language_penalty(missing)
         reasons.append("requires " + "/".join(sorted(missing)))
@@ -308,6 +374,13 @@ def score(job: dict) -> tuple[float, str]:
             pen += DOMAIN_PENALTY
             reasons.append(f"domain: {name}")
             break
+
+    # senior roles: only a close match to your CV keeps a high score
+    if SENIOR_RX.search(title):
+        gaps = senior_gaps(t, core + core_side, need, missing)
+        if gaps:
+            pen += SENIOR_PENALTY * len(gaps)
+            reasons.append("senior, but: " + ", ".join(gaps))
 
     total = max(0, min(100, s_stack + s_title + s_exp + s_loc + s_visa - pen))
     if no_sponsor:
@@ -353,7 +426,9 @@ def self_test():
              "5+ years of experience\n2+ years of software application development experience using Golang": 5,
              "Break4me: 1-month sabbatical after 3 years of service": None,
              "At least 4 years of professional experience": 4, "3-5 years of backend experience": 3,
-             "We've been growing for 10 years": None}
+             "We've been growing for 10 years": None,
+             "5+ years in SRE, Infrastructure Engineering, or Cloud Security Engineering": 5,
+             "Bonus after 2 years in the company": None}
     for t, want in years.items():
         assert required_years(t) == want, f"years {required_years(t)} != {want}: {t}"
     langs = {"2+ years of software application development experience using Golang": ["Go"],
@@ -379,6 +454,14 @@ def self_test():
     assert not SOFT_YEARS.search("At least 5 years of experience in software engineering.")
     s = sections("You have:\nJava\nNice to have: Kafka and Flink\n")
     assert "Kafka" in s["nice"] and "Kafka" not in s["req"], s
+    assert TITLE_OPS.search("Senior Software Engineer (SRE), Infrastructure Security")
+    assert SENIOR_RX.search("Sr. Backend Engineer") and not SENIOR_RX.search("Seniority-agnostic Backend Engineer")
+    assert senior_gaps("strong", ["java", "kafka", "spark"], MY_YEARS, {}) == []
+    assert len(senior_gaps("ops", ["azure"], MY_YEARS + 2, {})) == 3
+    assert accepted_alternatives("Proficiency in Kotlin (or Java and willing to learn Kotlin)", {"Kotlin": True}) \
+        == ({"Kotlin": "Java"} if "Java" in KNOWN_LANGS else {})
+    assert accepted_alternatives("2+ years of Kotlin", {"Kotlin": True}) == {}
+    assert MID_RX.search("Software Engineer II, Backend") and not MID_RX.search("Senior Software Engineer III")
     print(f"self-test passed (languages you use: {', '.join(sorted(KNOWN_LANGS)) or 'none listed'})")
 
 
@@ -388,6 +471,9 @@ def main():
     ap.add_argument("--show", type=int, default=0)
     ap.add_argument("--queue", type=int, default=0)
     ap.add_argument("--min-score", type=float, default=60)
+    ap.add_argument("--max-age-days", type=int, default=0,
+                    help="queue only jobs found in the last N days: today's first, then older ones to fill the "
+                         "remaining places (0 = any age, best score first)")
     ap.add_argument("--explain", type=int)
     ap.add_argument("--selftest", action="store_true", help="check the scoring rules on example sentences")
     ap.add_argument("--viability", action="store_true",
@@ -435,8 +521,16 @@ def main():
         if args.viability:
             import viability
             min_gain = viability.MIN_GAIN
-        for j in conn.execute("SELECT * FROM jobs WHERE status='scored' AND score >= ? "
-                              "ORDER BY score DESC, posted_at DESC", (args.min_score,)).fetchall():
+        if args.max_age_days:   # found today first; older ones (up to N days) only fill what's left
+            sql = ("SELECT *, date(fetched_at) = date('now') AS today FROM jobs WHERE status='scored' AND score >= ? "
+                   "AND fetched_at >= datetime('now', ?) ORDER BY today DESC, score DESC, posted_at DESC")
+            params = (args.min_score, f"-{args.max_age_days} days")
+        else:
+            sql = ("SELECT *, 1 AS today FROM jobs WHERE status='scored' AND score >= ? "
+                   "ORDER BY score DESC, posted_at DESC")
+            params = (args.min_score,)
+        older = 0
+        for j in conn.execute(sql, params).fetchall():
             if per_co.get(j["company"], 0) >= 2:
                 continue
             role = role_key(j["company"], j["title"])
@@ -450,6 +544,7 @@ def main():
                     continue
             if per_co.get(j["company"], 0) < 2:
                 picked.append(j["id"])
+                older += not j["today"]
                 seen_roles.add(role)
                 per_co[j["company"]] = per_co.get(j["company"], 0) + 1
             if len(picked) >= args.queue:
@@ -458,6 +553,8 @@ def main():
             db.set_status(conn, jid, "queued", "top score")
         conn.commit()
         print(f"Queued {len(picked)} jobs (min score {args.min_score:.0f})."
+              + (f" {older} of them found in the last {args.max_age_days} days, as today's new jobs weren't enough."
+                 if args.max_age_days and older else "")
               + (f" Viability filter skipped {too_low} that don't pay enough for their city." if args.viability else ""))
 
     if args.show:

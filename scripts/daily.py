@@ -58,14 +58,17 @@ def main():
     held = lock_info()
     if held:
         sys.exit(f"A job search is already running (started {held['started']}). Try again when it's done.")
-    print(f"Settings: queue {args.queue}/day · worth-it filter {'ON' if worth_it else 'off'}")
+    print(f"Settings: queue {args.queue}/day (score {AUTO.get('min_score', 70)}+, found in the last "
+          f"{AUTO.get('max_age_days', 7)} days) · worth-it filter {'ON' if worth_it else 'off'}")
 
     LOCK.parent.mkdir(exist_ok=True)
     LOCK.write_text(json.dumps({"started": datetime.now().isoformat(timespec="seconds"), "pid": os.getpid()}),
                     encoding="utf-8")
     try:
         run("scripts/fetch_jobs.py")
-        run("scripts/score_jobs.py", "--queue", str(args.queue), *(["--viability"] if worth_it else []))
+        run("scripts/score_jobs.py", "--queue", str(args.queue),
+            "--min-score", str(AUTO.get("min_score", 70)), "--max-age-days", str(AUTO.get("max_age_days", 7)),
+            *(["--viability"] if worth_it else []))
         run("scripts/check_forms.py", tail=30)
     finally:
         LOCK.unlink(missing_ok=True)

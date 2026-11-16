@@ -49,6 +49,8 @@ In `profile/preferences.toml`, under `[autopilot]`:
 | Setting | Default | What it does |
 |---|---|---|
 | `queue_per_day` | `15` | How many new matches are queued each morning. |
+| `min_score` | `70` | Only jobs scoring this or more are queued. |
+| `max_age_days` | `7` | Jobs found today come first. When they don't fill the list, jobs found in the last 7 days fill the rest. Nothing older is queued. |
 | `worth_it_filter` | `false` | `true` = only queue jobs that are [worth it money-wise](worth-it.md). |
 | `apply_include` | `["approved", "queued"]` | Which jobs go in the batch. With both: the jobs you approved; only when **none** is approved, the listed (queued) ones instead (their CV is written while the batch is prepared). `["approved"]` = never the listed ones. |
 | `max_per_batch` | `20` | Most applications one batch sends. The rest go in the next batch. There is no daily limit. (Old name: `max_applications_per_day`, still read.) |

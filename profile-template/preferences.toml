@@ -36,6 +36,8 @@ languages = ["Python", "Java", "SQL"]
 [scoring]
 domain_penalty = 25        # points lost when a job is in one of the [domains] below
 domain_min_keywords = 2    # how many of a domain's keywords the job must ask for (a title word is enough on its own)
+senior_penalty = 8         # points lost per gap when a "Senior" job doesn't closely match your CV (0 = off)
+senior_min_core = 3        # core skills a senior job must ask for
 
 # Specialist areas that shouldn't score like general backend work. A job counts as one when its title has a
 # "title" word, or what it asks for mentions domain_min_keywords of the "keywords". Add, edit or delete freely
@@ -80,6 +82,8 @@ enabled_by_default = false            # the "is it worth it?" check only runs wh
 [autopilot]
 # Daily routine (see docs/autopilot.md). Change any value; takes effect at the next run.
 queue_per_day = 15                     # best new matches queued each morning
+min_score = 70                         # only jobs scoring this or more are queued
+max_age_days = 7                       # today's new jobs first; if they don't fill the list, jobs found in the last 7 days
 worth_it_filter = false                # true = only queue jobs that are worth it money-wise (docs/worth-it.md)
 apply_include = ["approved", "queued"] # batch: approved jobs; the listed (queued) ones only when nothing is approved
 max_per_batch = 20                     # most applications one batch sends; the rest go in the next one
