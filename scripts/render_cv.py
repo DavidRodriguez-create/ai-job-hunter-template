@@ -66,14 +66,16 @@ aside { width: 60mm; flex: none; padding: 5mm 5mm 5mm 10mm; font-size: 9.2pt; }
 main { flex: 1; padding: 5mm 11mm 5mm 6mm; }
 h2 { font-size: 11pt; text-transform: uppercase; letter-spacing: .3px; color: ACC; margin: 0 0 4px;
      border-bottom: 1.3px solid ACC; padding-bottom: 1px; }
-aside h2 { border-bottom-color: #9fb0cd; }
+aside h2 { border-bottom-color: #9fb0cd; margin-bottom: 7px; }
 section { margin-bottom: 9px; }
+aside section { margin-bottom: 20px; }   /* the sidebar has room to spare: keep its sections apart */
 p { margin: 0; }
-.ci { display: flex; gap: 6px; margin: 2.5px 0; align-items: flex-start; }
+.ci { display: flex; gap: 6px; margin: 4px 0; align-items: flex-start; }
 .ci svg { width: 10px; height: 10px; flex: none; margin-top: 2px; fill: #3a3f4b; }
 .ci a { color: ACC; }
-.sk { margin-bottom: 4px; } .sk b, .ed b { display: block; color: ACC; }
-.ed { margin-bottom: 4px; }
+.sk { margin-bottom: 7px; } .sk b, .ed b { display: block; color: ACC; }
+.ed { margin-bottom: 7px; }
+aside section > div:last-child { margin-bottom: 0; }
 .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .when { color: #5a6070; font-style: italic; font-size: 8.8pt; white-space: nowrap; }
 .job { margin-bottom: 5px; }
