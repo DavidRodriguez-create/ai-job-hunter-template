@@ -45,11 +45,22 @@ table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--panel); }
 td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tablewrap { max-height: 640px; overflow: auto; }
+.tablewrap { overflow-x: auto; }
+/* Jobs table: one line per row, so a page of rows fits the window exactly */
+#jobs td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+#jobs td.co { max-width: 180px; }
+#jobs td.ttl { max-width: 0; width: 100%; }
+#jobs td select { padding: 2px 6px; }
+.jobs-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.jobs-head h2 { margin: 0; }
+.pager { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.pager #count { margin-right: 8px; }
+.pager button { min-width: 30px; padding: 3px 7px; font-variant-numeric: tabular-nums; }
+.pager button.cur { background: var(--accent); color: var(--panel); border-color: var(--accent); cursor: default; }
+.pager .gap { color: var(--muted); padding: 0 2px; }
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
 .sortinfo { margin: -4px 0 8px; }
 .sortinfo #sortinfo { color: var(--ink); }
-.pager { justify-content: center; margin: 12px 0 0; }
 button.dir { min-width: 30px; padding: 5px 6px; }
 button:disabled { opacity: .4; cursor: default; }
 th[data-sort] { cursor: pointer; user-select: none; white-space: nowrap; }
@@ -164,8 +175,11 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
     <div class="card"><h2>Salaries published in postings</h2><div id="salary"></div></div>
   </section>
 
-  <section class="card">
-    <h2>Jobs</h2>
+  <section class="card" id="jobs">
+    <div class="jobs-head">
+      <h2>Jobs</h2>
+      <div class="pager" id="pager"><span class="sub" id="count"></span><span id="pg-nav" style="display:contents"></span></div>
+    </div>
     <div class="filters">
       <input type="search" id="f-q" placeholder="Search title, company or description">
       <select id="f-status" title="Which job statuses to show">
@@ -177,7 +191,6 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
       <label><input type="checkbox" id="f-remote"> Remote</label>
       <label><input type="checkbox" id="f-salary"> Has salary</label>
       <button id="f-reset">Reset</button>
-      <span class="sub" id="count"></span>
     </div>
     <div class="sub sortinfo"><span id="sortinfo"></span>
       <button class="linkbtn" id="sort-reset">reset sorting</button>
@@ -191,17 +204,6 @@ a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: un
         <th class="hide-sm" data-sort="posted">Posted</th><th data-sort="status">Status</th></tr></thead>
       <tbody id="rows"></tbody>
     </table></div>
-    <div class="filters pager" id="pager">
-      <button id="pg-first" aria-label="First page" title="First page">«</button>
-      <button id="pg-prev">‹ Previous</button>
-      <span class="sub" id="pg-info"></span>
-      <button id="pg-next">Next ›</button>
-      <button id="pg-last" aria-label="Last page" title="Last page">»</button>
-      <select id="pg-per" aria-label="Jobs per page">
-        <option value="25">25 per page</option><option value="50" selected>50 per page</option>
-        <option value="100">100 per page</option><option value="200">200 per page</option>
-      </select>
-    </div>
   </section>
 </main>
 
@@ -360,31 +362,65 @@ function applySort() {
 }
 
 // Pages: filters and sorting go back to page 1; the status dropdown and Today buttons keep the current page.
-let PAGE = 1;
-function gotoPage(n) { PAGE = n; loadJobs({ keepPage: true }); $("rows").closest("section").scrollIntoView({ block: "start" }); }
+// A page holds as many rows as fit in the window under the Jobs header, so the list never scrolls.
+let PAGE = 1, PER = 0, ROW_H = 38;
+function fitPer() {
+  const sec = $("jobs"), headH = $("rows").getBoundingClientRect().top - sec.getBoundingClientRect().top;
+  const avail = window.innerHeight - headH - 16 /* card padding */ - 12 /* gap above the card */;
+  return Math.max(5, Math.floor(avail / ROW_H));
+}
+function gotoPage(n) { PAGE = n; loadJobs({ keepPage: true }); $("jobs").scrollIntoView({ block: "start" }); }
+
+// Page buttons: ‹ 1 … 4 5 6 … 20 ›
+function pageList(cur, last) {
+  const keep = new Set([1, last, cur - 1, cur, cur + 1].filter((n) => n >= 1 && n <= last));
+  const out = [], sorted = [...keep].sort((a, b) => a - b);
+  sorted.forEach((n, i) => {
+    const prev = sorted[i - 1];
+    if (prev && n - prev === 2) out.push(prev + 1);   // a gap of one page: show it instead of "…"
+    else if (prev && n - prev > 2) out.push("…");
+    out.push(n);
+  });
+  return out;
+}
+function renderPager(res) {
+  $("count").textContent = `${fmt(res.total)} jobs`;
+  const nav = $("pg-nav"); nav.replaceChildren();
+  if (res.pages <= 1) return;
+  const btn = (text, page, label) => el("button", { text, "aria-label": label, title: label,
+    onclick: () => gotoPage(page) });
+  const prev = btn("‹", res.page - 1, "Previous page"), next = btn("›", res.page + 1, "Next page");
+  prev.disabled = res.page <= 1; next.disabled = res.page >= res.pages;
+  nav.append(prev);
+  for (const n of pageList(res.page, res.pages)) {
+    if (n === "…") { nav.append(el("span", { class: "gap", text: "…" })); continue; }
+    const b = btn(String(n), n, `Page ${n}`);
+    if (n === res.page) { b.classList.add("cur"); b.setAttribute("aria-current", "page"); b.disabled = false; b.onclick = null; }
+    nav.append(b);
+  }
+  nav.append(next);
+}
+
+let resizeT;
+window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => {
+  const per = fitPer();
+  if (per !== PER) { PAGE = Math.floor(((PAGE - 1) * PER) / per) + 1; loadJobs({ keepPage: true }); }  // keep the first row in view
+}, 200); });
 
 async function loadJobs({ keepPage = false } = {}) {
   if (!keepPage) PAGE = 1;
+  PER = fitPer();
   const p = new URLSearchParams();
   for (const [k, id] of [["q", "f-q"], ["status", "f-status"], ["country", "f-country"], ["company", "f-company"]])
     if ($(id).value) p.set(k, $(id).value);
   p.set("sort", sortState.filter(([k]) => k).map(([k, d]) => `${k}:${d}`).join(","));
   if ($("f-remote").checked) p.set("remote", "1");
   if ($("f-salary").checked) p.set("salary", "1");
-  p.set("page", PAGE); p.set("per", $("pg-per").value);
+  p.set("page", PAGE); p.set("per", PER);
   const res = await (await fetch("/api/jobs?" + p)).json();
   const jobs = res.rows;
   PAGE = res.page;
-  const from = res.total ? (res.page - 1) * res.per + 1 : 0, to = (res.page - 1) * res.per + jobs.length;
-  $("count").textContent = `${fmt(res.total)} jobs`;
-  $("pg-info").textContent = res.total ? `${fmt(from)}–${fmt(to)} of ${fmt(res.total)} · page ${res.page} of ${res.pages}` : "";
-  $("pg-first").disabled = $("pg-prev").disabled = res.page <= 1;
-  $("pg-next").disabled = $("pg-last").disabled = res.page >= res.pages;
-  $("pg-first").onclick = () => gotoPage(1);
-  $("pg-prev").onclick = () => gotoPage(res.page - 1);
-  $("pg-next").onclick = () => gotoPage(res.page + 1);
-  $("pg-last").onclick = () => gotoPage(res.pages);
-  $("pager").hidden = res.pages <= 1;
+  renderPager(res);
   const tb = $("rows"); tb.replaceChildren();
   if (!jobs.length) { tb.append(el("tr", {}, el("td", { colspan: 8, class: "empty", text: "No jobs match" }))); return; }
   for (const j of jobs) {
@@ -394,8 +430,8 @@ async function loadJobs({ keepPage = false } = {}) {
       ...STATUSES.map((s) => { const o = el("option", { value: s, text: s }); if (s === j.status) o.selected = true; return o; }));
     const sal = j.salary_min ? `${fmt(j.salary_min)}${j.salary_max && j.salary_max !== j.salary_min ? "–" + fmt(j.salary_max) : ""} ${j.currency || ""}` : "";
     tb.append(el("tr", {},
-      el("td", { text: j.company }),
-      el("td", {}, title, j.remote ? el("span", { text: " " }) : "", j.remote ? el("span", { class: "pill", text: "remote" }) : ""),
+      el("td", { class: "co", text: j.company, title: j.company }),
+      el("td", { class: "ttl", title: j.title }, title, j.remote ? el("span", { text: " " }) : "", j.remote ? el("span", { class: "pill", text: "remote" }) : ""),
       el("td", { class: "hide-sm", text: j.country || j.location || "" , title: j.location || "" }),
       el("td", { class: "n hide-sm", text: j.score == null ? "—" : Math.round(j.score) }),
       el("td", { class: "n hide-sm", text: sal }),
@@ -404,6 +440,9 @@ async function loadJobs({ keepPage = false } = {}) {
       el("td", { class: "n hide-sm", text: (j.posted_at || "").slice(0, 10) }),
       el("td", {}, sel)));
   }
+  // The first guess of the row height can be off (fonts, zoom): measure it and refit once.
+  const h = tb.rows[0].getBoundingClientRect().height;
+  if (h && Math.abs(h - ROW_H) > 0.5) { ROW_H = h; if (fitPer() !== PER) loadJobs({ keepPage: true }); }
 }
 
 let t;
@@ -516,7 +555,6 @@ async function loadToday() {
 }
 
 async function refreshAll() { await Promise.all([loadStats(), loadToday()]); loadJobs({ keepPage: true }); }
-$("pg-per").addEventListener("change", () => loadJobs());
 $("approve-ready").addEventListener("click", () => LISTED_IDS.length && postStatus(LISTED_IDS, "approved"));
 $("apply-btn").addEventListener("click", () => { $("apply-help").hidden = !$("apply-help").hidden; });
 $("copy-cmd").addEventListener("click", async (e) => {

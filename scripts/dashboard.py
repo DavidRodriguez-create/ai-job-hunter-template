@@ -155,9 +155,9 @@ def jobs(conn, q: dict) -> dict:
         where.append("salary_min IS NOT NULL")
     where_sql = f"WHERE {' AND '.join(where)}" if where else ""
     total = conn.execute(f"SELECT COUNT(*) FROM jobs {where_sql}", args).fetchone()[0]
-    # One page at a time: ?page=1&per=50 (per is 10..200)
+    # One page at a time: ?page=1&per=50 (per is 5..200; the page asks for as many rows as fit the window)
     try:
-        per = min(max(int(q.get("per", 50)), 10), 200)
+        per = min(max(int(q.get("per", 50)), 5), 200)
         page = max(int(q.get("page", 1)), 1)
     except ValueError:
         per, page = 50, 1

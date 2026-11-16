@@ -35,8 +35,9 @@ Everything waiting for you, in one list: the jobs **listed to apply** (queued) a
 
 ## Jobs list (bottom of the page)
 
-Every job, with filters and sorting. It shows **50 jobs per page** (change it to 25, 100 or 200 below the table).
-Use **‹ Previous** / **Next ›**, or **«** / **»** for the first and last page. Changing a filter or the sorting goes back to page 1.
+Every job, with filters and sorting. Each page holds as many jobs as fit in your window, so the list never scrolls.
+The total number of jobs and the pages are at the top right: click a page number, or **‹** / **›** for the previous and next page.
+Changing a filter or the sorting goes back to page 1. Long titles are cut short: hover one to read it all.
 
 ## Everything else
 
