@@ -50,3 +50,4 @@ Backend engineer with 5 years building APIs and data pipelines for an e-commerce
 
 ## Other (volunteering, awards, side projects)
 - Open-source contributor to example-project.
+- Volunteer mentor at Code Club Lisbon (2022 – 2024).

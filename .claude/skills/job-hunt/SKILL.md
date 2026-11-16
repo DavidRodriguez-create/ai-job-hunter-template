@@ -48,6 +48,8 @@ Tailored CVs are written for approved jobs only (and for queued jobs at batch ti
    - **skills**: reorder rows and items so the job's stack comes first; drop irrelevant items. Don't add new ones.
    - **bullets**: keep the most relevant 4–6 for the main role(s) and fewer for older ones; rephrase with the job's
      vocabulary; keep every number exactly as in the source. Drop the least relevant/oldest bullets if space is tight.
+     Open each bullet with a `**bold lead phrase**` (the result), then the how; aim for 2 lines, and reword a bullet
+     whose last line is a single word.
    - Keep it to **1 page** (the renderer warns if it isn't — trim and re-render).
    - **cover_letter** (optional, include when the posting or form asks for one): `{"greeting": "Dear <Company> team,",
      "paragraphs": [3–4 short paragraphs], "closing": "Kind regards,"}`. Para 1: role + why this company

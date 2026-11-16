@@ -48,25 +48,55 @@ CHROME_COMMANDS = ["google-chrome", "google-chrome-stable", "chromium", "chromiu
                    "microsoft-edge", "brave-browser", "chrome", "msedge"]
 e = html.escape
 
+ACCENT = "#2d4a7a"
 CSS = """
-@page { size: A4; margin: 11mm 14mm; }
+@page { size: A4; margin: 0; }
 * { box-sizing: border-box; }
-body { font-family: Calibri, Carlito, "Helvetica Neue", Helvetica, "Segoe UI", Arial, sans-serif; font-size: 10pt; line-height: 1.28; color: #1a1a1a; margin: 0; }
-h1 { font-size: 20pt; margin: 0; letter-spacing: .3px; }
-.headline { font-size: 11.5pt; color: #2f4a8a; margin: 1px 0 4px; font-weight: 600; }
-.contact { font-size: 9.2pt; color: #444; }
-.contact a { color: #2f4a8a; text-decoration: none; }
-h2 { font-size: 10.5pt; text-transform: uppercase; letter-spacing: .8px; color: #2f4a8a;
-     border-bottom: 1px solid #c9d2e6; padding-bottom: 2px; margin: 8px 0 4px; }
-p { margin: 0 0 4px; }
-.row { display: flex; justify-content: space-between; gap: 12px; }
-.job { margin-bottom: 6px; } .job-h { font-weight: 700; } .muted { color: #555; font-size: 9.4pt; white-space: nowrap; }
-.proj { font-weight: 600; color: #333; margin-top: 3px; font-size: 9.9pt; }
-ul { margin: 2px 0 3px 0; padding-left: 15px; } li { margin: 1px 0; }
-.skills { display: grid; grid-template-columns: 120px 1fr; gap: 1px 10px; }
-.skills b { font-weight: 600; }
+html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: Calibri, Carlito, "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 9.8pt;
+       line-height: 1.3; color: #1f2430; margin: 0; }
+a { color: inherit; }
+.top { background: ACC; color: #fff; padding: 8mm 11mm 6mm 10mm; }
+.top h1 { font-size: 22pt; text-transform: uppercase; letter-spacing: .4px; margin: 0; line-height: 1.1; }
+.top .headline { font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; color: #c8d5ec; margin-top: 2px; }
+.side-bg { position: fixed; left: 0; top: 0; bottom: 0; width: 60mm; background: #edf1f8;
+           border-right: 1px solid #dbe2ee; z-index: -1; }
+.cols { display: flex; }
+aside { width: 60mm; flex: none; padding: 5mm 5mm 5mm 10mm; font-size: 9.2pt; }
+main { flex: 1; padding: 5mm 11mm 5mm 6mm; }
+h2 { font-size: 11pt; text-transform: uppercase; letter-spacing: .3px; color: ACC; margin: 0 0 4px;
+     border-bottom: 1.3px solid ACC; padding-bottom: 1px; }
+aside h2 { border-bottom-color: #9fb0cd; }
+section { margin-bottom: 9px; }
+p { margin: 0; }
+.ci { display: flex; gap: 6px; margin: 2.5px 0; align-items: flex-start; }
+.ci svg { width: 10px; height: 10px; flex: none; margin-top: 2px; fill: #3a3f4b; }
+.ci a { color: ACC; }
+.sk { margin-bottom: 4px; } .sk b, .ed b { display: block; color: ACC; }
+.ed { margin-bottom: 4px; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.when { color: #5a6070; font-style: italic; font-size: 8.8pt; white-space: nowrap; }
+.job { margin-bottom: 5px; }
+.job-h { font-weight: 700; font-size: 10.3pt; } .job-h .co { font-weight: 600; color: #5a6070; font-size: 9.6pt; }
+.proj { margin: 4px 0 1px 8px; color: ACC; font-weight: 600; }
+.proj > span:first-child::before { content: "» "; }
+ul { margin: 1px 0 3px 8px; padding-left: 16px; } li { margin: 1.5px 0; }
+.vol { margin: 2px 0; }
+.letter-page { padding: 14mm 16mm; }
+.letter-page h1 { font-size: 20pt; margin: 0; color: ACC; }
+.letter-page .contact { font-size: 9.5pt; color: #444; }
 .letter { font-size: 11pt; line-height: 1.5; } .letter p { margin: 0 0 10px; }
-"""
+""".replace("ACC", ACCENT)
+
+# Small contact icons (24x24 viewBox paths).
+ICONS = {
+    "location": "M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z",
+    "phone": "M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z",
+    "email": "M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5z",
+    "linkedin": "M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8.3 18H5.7V9.7h2.6zM7 8.6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM18.3 18h-2.6v-4c0-1 0-2.2-1.3-2.2s-1.6 1-1.6 2.1V18h-2.6V9.7h2.5v1.1c.4-.7 1.2-1.3 2.5-1.3 2.6 0 3.1 1.7 3.1 4z",
+    "github": "M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.4 1.1 2.9.8.1-.6.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.7s.8-.3 2.8 1a9.5 9.5 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z",
+    "web": "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-2.9a15.7 15.7 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8zM12 4c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.8 1.9-4zM4.3 14a8.2 8.2 0 0 1 0-4h3.4a16.5 16.5 0 0 0 0 4zm.8 2h2.9c.3 1.3.8 2.5 1.4 3.6A8 8 0 0 1 5.1 16zM8 8H5.1a8 8 0 0 1 4.3-3.6C8.8 5.5 8.4 6.7 8 8zm4 12c-.8-1.2-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.8-1.9 4zm2.3-6H9.7a14.7 14.7 0 0 1 0-4h4.6a14.7 14.7 0 0 1 0 4zm.3 5.6c.6-1.1 1.1-2.3 1.4-3.6h2.9a8 8 0 0 1-4.3 3.6zm1.7-5.6a16.5 16.5 0 0 0 0-4h3.4a8.2 8.2 0 0 1 0 4z",
+}
 
 
 def numbers(text: str) -> set[str]:
@@ -81,39 +111,75 @@ def check_grounded(cv: dict) -> list[str]:
     return sorted(n for n in numbers(text) - allowed if n not in {"1", "2", "3", "4", "5"})
 
 
-def cv_html(cv: dict) -> str:
+def rich(text: str) -> str:
+    """Escape, then turn **lead phrase** into bold (bullet openers, summary)."""
+    return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", e(text))
+
+
+def icon(name: str) -> str:
+    return f"<svg viewBox='0 0 24 24'><path d='{ICONS[name]}'/></svg>" if name else "<svg></svg>"
+
+
+def link_icon(label: str, url: str) -> str:
+    key = f"{label} {url}".lower()
+    return icon("linkedin" if "linkedin" in key else "github" if "github" in key else "web")
+
+
+def sidebar(cv: dict) -> str:
     c = cv["contact"]
-    links = " · ".join(f'<a href="{e(u)}">{e(n)}</a>' for n, u in c.get("links", []))
-    parts = [f"<h1>{e(cv['name'])}</h1>",
-             f"<div class='headline'>{e(cv['headline'])}</div>",
-             f"<div class='contact'>{e(c['location'])} · {e(c['email'])} · {e(c['phone'])}<br>{links}</div>",
-             "<h2>Summary</h2>", f"<p>{e(cv['summary'])}</p>", "<h2>Experience</h2>"]
+    phones = c["phone"] if isinstance(c["phone"], list) else [c["phone"]]
+    rows = [f"<div class='ci'>{icon('location' if i == 0 else '')}<span>{e(x)}</span></div>"
+            for i, x in enumerate(c["location"].split(" · "))]
+    rows += [f"<div class='ci'>{icon('phone')}<span>{e(p)}</span></div>" for p in phones]
+    rows.append(f"<div class='ci'>{icon('email')}<a href='mailto:{e(c['email'])}'>"
+                f"{e(c['email']).replace('@', '<wbr>@')}</a></div>")
+    rows += [f"<div class='ci'>{link_icon(n, u)}<a href='{e(u)}'>{e(n)}</a></div>" for n, u in c.get("links", [])]
+    out = [f"<section><h2>Contact</h2>{''.join(rows)}</section>",
+           "<section><h2>Skills</h2>" + "".join(f"<div class='sk'><b>{e(k)}</b>{e(v)}</div>"
+                                                for k, v in cv["skills"]) + "</section>",
+           "<section><h2>Education</h2>" + "".join(
+               f"<div class='ed'><b>{e(d)}</b>{e(s)}" + (f"<br><span class='when'>{e(y)}</span>" if y else "") + "</div>"
+               for d, s, y in cv["education"]) + "</section>",
+           "<section><h2>Languages</h2>" + "".join(f"<div>{e(x)}</div>" for x in cv["languages"].split(" · "))
+           + "</section>"]
+    if cv.get("extra"):
+        out.append("<section><h2>Other</h2>" + "".join(f"<div class='ed'>{e(x)}</div>" for x in cv["extra"])
+                   + "</section>")
+    return "".join(out)
+
+
+def cv_html(cv: dict) -> str:
+    main = [f"<section><h2>Summary</h2><p>{rich(cv['summary'])}</p></section>", "<section><h2>Work experience</h2>"]
     for job in cv["experience"]:
-        parts.append(f"<div class='job'><div class='row'><span class='job-h'>{e(job['role'])} · {e(job['company'])}</span>"
-                     f"<span class='muted'>{e(job['dates'])} · {e(job['location'])}</span></div>")
+        where = " · ".join(x for x in (job.get("dates", ""), job.get("location", "")) if x)
+        main.append(f"<div class='job'><div class='row'><span class='job-h'>{e(job['role'])}"
+                    f" <span class='co'>· {e(job['company'])}</span></span><span class='when'>{e(where)}</span></div>")
         for p in job["projects"]:
             if p.get("name"):
-                parts.append(f"<div class='row proj'><span>{e(p['name'])}</span><span class='muted'>{e(p.get('dates', ''))}</span></div>")
-            parts.append("<ul>" + "".join(f"<li>{e(b)}</li>" for b in p["bullets"]) + "</ul>")
-        parts.append("</div>")
-    parts.append("<h2>Skills</h2><div class='skills'>" +
-                 "".join(f"<b>{e(k)}</b><span>{e(v)}</span>" for k, v in cv["skills"]) + "</div>")
-    parts.append("<h2>Education</h2>" + "".join(
-        f"<div class='row'><span><b>{e(d)}</b> — {e(s)}</span><span class='muted'>{e(y)}</span></div>"
-        for d, s, y in cv["education"]))
-    parts.append(f"<h2>Languages</h2><p>{e(cv['languages'])}</p>")
-    if cv.get("extra"):
-        parts.append("<h2>Other</h2><p>" + " · ".join(e(x) for x in cv["extra"]) + "</p>")
-    return page(cv["name"] + " — CV", "".join(parts))
+                main.append(f"<div class='row proj'><span>{e(p['name'])}</span>"
+                            f"<span class='when'>{e(p.get('dates', ''))}</span></div>")
+            main.append("<ul>" + "".join(f"<li>{rich(b)}</li>" for b in p["bullets"]) + "</ul>")
+        main.append("</div>")
+    main.append("</section>")
+    if cv.get("volunteer"):   # [[role, organisation, "when, where"], ...]
+        main.append("<section><h2>Volunteer experience</h2>" + "".join(
+            f"<div class='vol'><b>{e(r)}</b> · {e(o)}" + (f" <span class='when'>({e(w)})</span>" if w else "") + "</div>"
+            for r, o, w in cv["volunteer"]) + "</section>")
+    body = (f"<div class='side-bg'></div><header class='top'><h1>{e(cv['name'])}</h1>"
+            f"<div class='headline'>{e(cv['headline'])}</div></header>"
+            f"<div class='cols'><aside>{sidebar(cv)}</aside><main>{''.join(main)}</main></div>")
+    return page(cv["name"] + " — CV", body)
 
 
 def letter_html(cv: dict) -> str:
     cl = cv["cover_letter"]
     c = cv["contact"]
-    body = (f"<h1>{e(cv['name'])}</h1><div class='contact'>{e(c['email'])} · {e(c['phone'])} · {e(c['location'])}</div>"
+    phone = c["phone"][0] if isinstance(c["phone"], list) else c["phone"]
+    body = (f"<div class='letter-page'><h1>{e(cv['name'])}</h1>"
+            f"<div class='contact'>{e(c['email'])} · {e(phone)} · {e(c['location'])}</div>"
             f"<div class='letter'><p style='margin-top:24px'>{e(cl.get('greeting', 'Dear Hiring Team,'))}</p>"
             + "".join(f"<p>{e(p)}</p>" for p in cl["paragraphs"])
-            + f"<p>{e(cl.get('closing', 'Kind regards,'))}<br>{e(cv['name'])}</p></div>")
+            + f"<p>{e(cl.get('closing', 'Kind regards,'))}<br>{e(cv['name'])}</p></div></div>")
     return page(cv["name"] + " — Cover letter", body)
 
 

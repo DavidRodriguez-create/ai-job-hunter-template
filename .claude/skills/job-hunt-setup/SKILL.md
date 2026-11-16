@@ -33,7 +33,9 @@ Then ask for **numbers** (the biggest CV improvement): for their 3–5 main achi
 
 ## Step 3: Build the default CV
 Write **`profile/cv_base.json`** from resume_master.md (same structure as the template: name, headline, contact,
-summary, skills rows, experience → projects → bullets, education, languages, extra).
+summary, skills rows, experience → projects → bullets, education, languages, optional volunteer and extra).
+Start each bullet with a `**bold lead phrase**` and keep bullets to about 2 lines; the layout is a sidebar
+(contact, skills, education, languages) plus a main column, so short skill rows read best.
 Render it: `python scripts/render_cv.py --base` → `output/base/cv.pdf`. Read it back and fix anything that looks off.
 (The full base CV may be 2 pages; tailored ones get trimmed to 1.)
 
