@@ -95,12 +95,27 @@ REGION_HINTS = {
 }
 
 
+# ISO 3166 country codes, used when a source gives a code. Kept apart from COUNTRY_HINTS, whose
+# two-letter hints include US states and Canadian provinces ("CA" = California, "IL" = Illinois).
+ISO2 = {"Switzerland": "CH", "Norway": "NO", "United States": "US", "Canada": "CA", "Japan": "JP",
+        "Netherlands": "NL", "Denmark": "DK", "Ireland": "IE", "Germany": "DE", "Luxembourg": "LU",
+        "United Kingdom": "GB", "Sweden": "SE", "Australia": "AU", "Singapore": "SG", "India": "IN",
+        "Brazil": "BR", "Poland": "PL", "Portugal": "PT", "Italy": "IT", "Belgium": "BE", "Austria": "AT",
+        "Finland": "FI", "Israel": "IL", "Mexico": "MX", "France": "FR", "Spain": "ES"}
+ISO3 = {"Switzerland": "CHE", "Norway": "NOR", "United States": "USA", "Canada": "CAN", "Japan": "JPN",
+        "Netherlands": "NLD", "Denmark": "DNK", "Ireland": "IRL", "Germany": "DEU", "Luxembourg": "LUX",
+        "United Kingdom": "GBR", "Sweden": "SWE", "Australia": "AUS", "Singapore": "SGP", "India": "IND",
+        "Brazil": "BRA", "Poland": "POL", "Portugal": "PRT", "Italy": "ITA", "Belgium": "BEL", "Austria": "AUT",
+        "Finland": "FIN", "Israel": "ISR", "Mexico": "MEX", "France": "FRA", "Spain": "ESP"}
+CODE_TO_COUNTRY = {**{v: k for k, v in ISO2.items()}, **{v: k for k, v in ISO3.items()}, "UK": "United Kingdom"}
+ISO3_TO_COUNTRY = {v: k for k, v in ISO3.items()}
+
+
 def detect_country(location: str | None, country_code: str | None = None) -> str | None:
     if country_code:
-        code = country_code.lower()
-        for country, hints in COUNTRY_HINTS.items():
-            if code in hints and len(code) == 2:
-                return country
+        country = CODE_TO_COUNTRY.get(country_code.strip().upper())
+        if country:
+            return country
     if not location:
         return None
     text = location.lower()
@@ -383,15 +398,6 @@ def fetch_workday(slug: str, company: str) -> list[dict]:
             time.sleep(0.2)
     details.done()
     return out
-
-
-# ISO 3166 alpha-3 codes, for sites that filter by country code (Amazon).
-ISO3 = {"Switzerland": "CHE", "Norway": "NOR", "United States": "USA", "Canada": "CAN", "Japan": "JPN",
-        "Netherlands": "NLD", "Denmark": "DNK", "Ireland": "IRL", "Germany": "DEU", "Luxembourg": "LUX",
-        "United Kingdom": "GBR", "Sweden": "SWE", "Australia": "AUS", "Singapore": "SGP", "India": "IND",
-        "Brazil": "BRA", "Poland": "POL", "Portugal": "PRT", "Italy": "ITA", "Belgium": "BEL", "Austria": "AUT",
-        "Finland": "FIN", "Israel": "ISR", "Mexico": "MEX", "France": "FRA", "Spain": "ESP"}
-ISO3_TO_COUNTRY = {v: k for k, v in ISO3.items()}
 
 
 def fetch_amazon(slug: str, company: str) -> list[dict]:
